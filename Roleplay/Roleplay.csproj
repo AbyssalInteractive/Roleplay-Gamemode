@@ -48,10 +48,14 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Builds\Game\Nova-Life_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Temp\bin\Debug\UnityEngine.JSONSerializeModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Roleplay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RPCharacter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

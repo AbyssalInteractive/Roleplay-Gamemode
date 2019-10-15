@@ -2,6 +2,7 @@
 using Mirror;
 using UnityEngine;
 
+
 public class Roleplay : Gamemode
 {
     public override void OnGamemodeInit()
@@ -27,6 +28,16 @@ public class Roleplay : Gamemode
     public override void OnPlayerEnterVehicle(uint playerId, uint vehicleId)
     {
         base.OnPlayerEnterVehicle(playerId, vehicleId);
+
+        if(IsPlayerVehicle(playerId, vehicleId))
+        {
+            
+        }else
+        {
+            SendClientMessage(playerId, "#96121d", "Ce véhicule ne vous appartient pas.");
+        }
+        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+
     }
 
     public override void OnPlayerExitVehicle(uint playerId, uint vehicleId)
