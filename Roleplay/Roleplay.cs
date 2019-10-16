@@ -13,7 +13,6 @@ public class Roleplay : Gamemode
         Humvee,
         Pickup,
         Truck
-
     }
 
     public override void OnGamemodeInit()
@@ -27,9 +26,10 @@ public class Roleplay : Gamemode
         base.OnPlayerCommand(playerId, command);
     }
 
-    public override void OnPlayerConnect(uint playerId)
+    public override void OnPlayerConnect(uint playerId, string steamId)
     {
-        base.OnPlayerConnect(playerId);
+        base.OnPlayerConnect(playerId, steamId);
+        SendBroadcastMessage("#ffffff", GetSteamUsernameBySteamId(steamId) + " s'est connecté au serveur !");
     }
 
     public override void OnPlayerDisconnect(uint playerId)
@@ -40,6 +40,18 @@ public class Roleplay : Gamemode
     public override void OnPlayerEnterVehicle(uint playerId, uint vehicleId)
     {
         base.OnPlayerEnterVehicle(playerId, vehicleId);
+
+        PlayerText textDraw = new PlayerText();
+        textDraw.text = "Your vehicle : " + vehicleId;
+        textDraw.position.x = -50;
+        textDraw.position.y = 25;
+        textDraw.size.x = 100;
+        textDraw.size.y = 50;
+        textDraw.alignment = 9;
+        textDraw.textAlignment = 8;
+        textDraw.outline = true;
+        textDraw.shadow = true;        
+        TextDrawUpdate(0, textDraw);
 
         if(IsPlayerVehicle(playerId, vehicleId))
         {
@@ -65,6 +77,14 @@ public class Roleplay : Gamemode
     public override void OnPlayerKeyDown(KeyCode key, uint playerId)
     {
         base.OnPlayerKeyDown(key, playerId);
+
+        if(key == KeyCode.J)
+        {
+            if(IsPlayerInAnyVehicle(playerId))
+            {
+                SetVehicleVelocity(GetPlayerVehicleID(playerId), 25);
+            }
+        }
     }
 
     public override void OnPlayerMessage(string message, uint playerId)
@@ -100,7 +120,7 @@ public class Roleplay : Gamemode
     void CreateTextDraws()
     {
         PlayerText textDraw = new PlayerText();
-        textDraw.text = "Riverside RP";
+        textDraw.text = "Coucou Adrien";
         textDraw.position.x = -50;
         textDraw.position.y = 25;
         textDraw.size.x = 100;
