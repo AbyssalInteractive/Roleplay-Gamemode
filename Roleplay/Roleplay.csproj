@@ -32,10 +32,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mirror">
-      <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Build\Game\Nova-Life_Data\Managed\Mirror.dll</HintPath>
+      <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Builds\Game\Nova-Life_Data\Managed\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="Nova-Life.Gamemode">
-      <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Build\Game\Nova-Life_Data\Managed\Nova-Life.Gamemode.dll</HintPath>
+      <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Temp\bin\Debug\Nova-Life.Gamemode.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -49,13 +49,14 @@
       <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Build\Game\Nova-Life_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Build\Game\Nova-Life_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Builds\Game\Nova-Life_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.JSONSerializeModule">
-      <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Build\Game\Nova-Life_Data\Managed\UnityEngine.JSONSerializeModule.dll</HintPath>
+      <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Temp\bin\Debug\UnityEngine.JSONSerializeModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Account.cs" />
     <Compile Include="Roleplay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RPCharacter.cs" />
