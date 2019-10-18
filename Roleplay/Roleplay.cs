@@ -46,7 +46,39 @@ public class Roleplay : Gamemode
         type = 0
     };
 
+    TextDialogJson TEXTDIALOG_ATM = new TextDialogJson
+    {
+        id = 5,
+        textContent = "Votre solde bancaire : 454€",
+        button1 = "Déposer",
+        button2 = "Retirer",
+        button3 = "Annuler",
+        title = "ATM",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_ATM_WITHDRAW = new TextDialogJson
+    {
+        id = 6,
+        textContent = "Montant de votre retrait bancaire :",
+        button1 = "Retirer",
+        button2 = "Annuler",
+        title = "ATM - RETRAIT",
+        type = 1
+    };
+
+    TextDialogJson TEXTDIALOG_ATM_DEPOSIT = new TextDialogJson
+    {
+        id = 7,
+        textContent = "Montant de votre dépot bancaire :",
+        button1 = "Déposer",
+        button2 = "Annuler",
+        title = "ATM - DÉPOT",
+        type = 1
+    };
+
     int TEXTLABEL_BUYCAR_01;
+    int TEXTLABEL_ATM;
 
     public enum VehicleNames
     {
@@ -192,6 +224,106 @@ public class Roleplay : Gamemode
         {
             DestroyTextDialog(playerId, TEXTDIALOG_WELCOME.id);
         }
+
+        if(response.id == TEXTDIALOG_BUYCAR.id)
+        {
+            // On a besoin de savoir quel véhicule le joueur souhaite acheter
+            if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_BUYCAR_01) < 1f)
+            {
+                // Landstalker
+            }
+        }
+
+        if(response.id == TEXTDIALOG_ATM.id)
+        {
+            if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_ATM) < 2f)
+            {
+                if(response.selectedButton == 1)
+                {
+                    DestroyTextDialog(playerId, TEXTDIALOG_ATM.id);
+                    CreateTextDialog(playerId, TEXTDIALOG_ATM_DEPOSIT);
+                }
+                else if (response.selectedButton == 2)
+                {
+                    DestroyTextDialog(playerId, TEXTDIALOG_ATM.id);
+                    CreateTextDialog(playerId, TEXTDIALOG_ATM_WITHDRAW);
+                }
+                else
+                {
+                    SendClientMessage(playerId, "#912091", "** Retrait de votre carte bancaire **");
+                    DestroyTextDialog(playerId, TEXTDIALOG_ATM.id);
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_ATM.id);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_ATM_DEPOSIT.id)
+        {
+            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+            float money = float.Parse(response.input);
+            if (response.selectedButton == 1)
+            {
+                if (money > 0)
+                {
+                    if (money <= rpCharacter.money)
+                    {
+                        rpCharacter.money = rpCharacter.money - money;
+                        rpCharacter.bank = money + rpCharacter.bank;
+                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
+                        DestroyTextDialog(playerId, TEXTDIALOG_ATM_DEPOSIT.id);
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=#36bf4a>Nouveau solde bancaire : " + rpCharacter.bank + "€ !</color>");
+                    }
+                    else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=red>Vous n'avez pas cet argent sur vous !</color>");
+                    }
+                }
+                else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=red>Montant invalide ! Veuillez saisir un nouveau montant</color>");
+                }
+            }
+            else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_ATM_DEPOSIT.id);
+            }
+            
+        }
+
+        if(response.id == TEXTDIALOG_ATM_WITHDRAW.id)
+        {
+            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+            float money = float.Parse(response.input);
+
+            if(response.selectedButton == 1)
+            {
+                if (money > 0)
+                {
+                    if (money <= rpCharacter.bank)
+                    {
+                        rpCharacter.money = money + rpCharacter.money;
+                        rpCharacter.bank = rpCharacter.bank - money;
+                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
+                        DestroyTextDialog(playerId, TEXTDIALOG_ATM_WITHDRAW.id);
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=#36bf4a>Nouveau solde bancaire : " + rpCharacter.bank + "€ !</color>");
+                    }
+                    else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=red>Vous n'avez pas cet argent sur votre compte en banque !</color>");
+                    }
+                }
+                else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=red>Montant invalide ! Veuillez saisir un nouveau montant</color>");
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_ATM_WITHDRAW.id);
+            }
+            
+        }
     }
 
     public override void OnPlayerDisconnect(uint playerId)
@@ -251,6 +383,7 @@ public class Roleplay : Gamemode
             if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_BUYCAR_01) < 1f)
             {
                 // TODO : Création du dialog, validation de l'achat du véhicule
+                CreateTextDialog(playerId, TEXTDIALOG_BUYCAR);
             }
         }
     }
@@ -258,17 +391,68 @@ public class Roleplay : Gamemode
     public override void OnPlayerMessage(string message, uint playerId)
     {
         base.OnPlayerMessage(message, playerId);
+        if(message.Substring(0, 1) == "/")
+        {
+            string command = message.Substring(1);
+            string[] args = command.Split(char.Parse(" "));
+
+            switch(args[0])
+            {
+                case "atm":
+                    if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_ATM) < 2)
+                    {
+                        TextDialogJson textDialog = TEXTDIALOG_ATM;
+                        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+                        textDialog.textContent = "Votre solde bancaire : " + rpCharacter.bank + "€";
+                        CreateTextDialog(playerId, textDialog);
+                    }
+                    else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "Vous n'êtes pas proche d'un ATM !");
+                        SendClientMessage(playerId, "#ffffff", "<color=red>[DEBUG]</color> Distance : " + GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_ATM));
+                        SendClientMessage(playerId, "#ffffff", "<color=red>[DEBUG]</color> ID : " + TEXTLABEL_ATM);
+                    }
+                    
+                    break;
+            }
+        }
     }
 
     public override void OnPlayerSpawn(uint playerId)
     {
         base.OnPlayerSpawn(playerId);
         CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
+        PlayerText playerUI = new PlayerText();
+        playerUI.alignment = 7;
+        playerUI.textAlignment = 6;
+        playerUI.position = new Vector2(305.7f, 120.7f);
+        playerUI.size = new Vector2(581.5f, 191.4f);
+        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+        playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
+        players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
     }
 
     public override void OnPlayerUpdate(uint playerId)
     {
         base.OnPlayerUpdate(playerId);
+    }
+
+    public override void OnRPCharacterUpdate(uint playerId, string _rpCharacter)
+    {
+        base.OnRPCharacterUpdate(playerId, _rpCharacter);
+        string playerTextID;
+        if (players[playerId].TryGetValue("playerUI", out playerTextID))
+        {
+            PlayerText playerUI = new PlayerText();
+            playerUI.alignment = 7;
+            playerUI.textAlignment = 6;
+            playerUI.position = new Vector2(305.7f, 120.7f);
+            playerUI.size = new Vector2(581.5f, 191.4f);
+            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(_rpCharacter);
+            SendClientMessage(playerId, "#ffffff", "Nouveau solde : " + rpCharacter.money);
+            playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + (int)rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
+            PlayerTextDrawUpdate(playerId, int.Parse(playerTextID), playerUI);
+        }
     }
 
     public override void OnServerLoop()
@@ -308,7 +492,9 @@ public class Roleplay : Gamemode
         Create3DTextLabel("Utilisez <color=#3480eb>/téléphoner</color> [numéro]", new Vector3(878, 165, 1235));
         Create3DTextLabel("Regardez le <b><color=red>con</color></b>, il s'est vautré !", new Vector3(893, 166.5f, 1222));
         Create3DTextLabel("Le bus des nouveaux arrivants !", new Vector3(880, 165, 1219));
-        TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(880, 165, 1219));
+        TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(818.036f, 165.078f, 1110.951f));
+        TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(886.673f, 166.69f, 1233.943f));
+
     }
 
     void JobsInit()
