@@ -2,6 +2,7 @@
 using Mirror;
 using UnityEngine;
 using System.IO;
+using System.Collections.Generic;
 
 public class Roleplay : Gamemode
 {
@@ -35,6 +36,18 @@ public class Roleplay : Gamemode
         type = 1
     };
 
+    TextDialogJson TEXTDIALOG_BUYCAR = new TextDialogJson
+    {
+        id = 4,
+        textContent = "Êtes-vous sûr de vouloir acheter ce véhicule ?",
+        button1 = "Acheter",
+        button2 = "Annuler",
+        title = "Concessionnaire",
+        type = 0
+    };
+
+    int TEXTLABEL_BUYCAR_01;
+
     public enum VehicleNames
     {
         Fast,
@@ -45,20 +58,13 @@ public class Roleplay : Gamemode
         Truck
     }
 
-    public enum Jobs
-    {
-        Civilian,
-
-    }
+    public Dictionary<int, Job> jobs = new Dictionary<int, Job>();
 
     public override void OnGamemodeInit()
     {
         base.OnGamemodeInit();
-        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
-        if (!Directory.Exists(path_accounts))
-        {
-            Directory.CreateDirectory(path_accounts);
-        }
+        AccountsInit();
+        JobsInit();
         CreateTextDraws();
         TextLabels();
     }
@@ -71,10 +77,12 @@ public class Roleplay : Gamemode
     public override void OnPlayerConnect(uint playerId, string steamId)
     {
         base.OnPlayerConnect(playerId, steamId);
+        // On affiche globalement quel joueur steam s'est connecté
         SendBroadcastMessage("#ffffff", GetSteamUsernameBySteamId(steamId) + " s'est connecté au serveur !");
         RegisterOrLogin(playerId, steamId);
     }
 
+    // Fonction pour savoir si l'on doit connecter ou inscrire le joueur
     void RegisterOrLogin(uint playerId, string steamId)
     {
         string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
@@ -98,6 +106,7 @@ public class Roleplay : Gamemode
         CreateTextDialog(playerId, TEXTDIALOG_LOGIN);
     }
 
+    // Fonction pour inscrire le compte dans le dossier Accounts du serveur
     void RegisterAccount(Account account, uint playerId)
     {
         string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
@@ -111,6 +120,7 @@ public class Roleplay : Gamemode
         }
     }
 
+    // Fonction pour tester si on peut connecter une compte
     bool LoginAccount(string steamId, uint playerId, string password)
     {
         string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
@@ -139,6 +149,7 @@ public class Roleplay : Gamemode
         base.OnTextDialogResponse(playerId, response);
         if(response.id == TEXTDIALOG_LOGIN.id)
         {
+            // On récupère le steamId du joueur
             string steamId = players[playerId]["steamId"];
             if(response.selectedButton == 1)
             {
@@ -192,6 +203,7 @@ public class Roleplay : Gamemode
     {
         base.OnPlayerEnterVehicle(playerId, vehicleId);
 
+        // Création de l'interface du véhicule
         PlayerText textDraw = new PlayerText();
         textDraw.text = "Your vehicle : " + vehicleId;
         textDraw.position.x = -50;
@@ -204,6 +216,7 @@ public class Roleplay : Gamemode
         textDraw.shadow = true;        
         TextDrawUpdate(0, textDraw);
 
+        // On teste le véhicule appartient au joueur
         if(IsPlayerVehicle(playerId, vehicleId))
         {
             
@@ -231,6 +244,14 @@ public class Roleplay : Gamemode
         if(key == KeyCode.F12)
         {
             SendClientMessage(playerId, "#ffffff", "<color=red>[DEBUG]</color> Player Position : " + GetPlayerPos(playerId));
+        }
+
+        if(key == KeyCode.F)
+        {
+            if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_BUYCAR_01) < 1f)
+            {
+                // TODO : Création du dialog, validation de l'achat du véhicule
+            }
         }
     }
 
@@ -265,6 +286,7 @@ public class Roleplay : Gamemode
         base.OnVehicleSpawn(vehicleId);
     }
 
+    // Le nom du serveur, mettez le votre !
     void CreateTextDraws()
     {
         PlayerText textDraw = new PlayerText();
@@ -280,11 +302,48 @@ public class Roleplay : Gamemode
         TextDrawCreate(textDraw);
     }
 
+    // Les différents 3DTextLabels de la carte
     void TextLabels()
     {
         Create3DTextLabel("Utilisez <color=#3480eb>/téléphoner</color> [numéro]", new Vector3(878, 165, 1235));
         Create3DTextLabel("Regardez le <b><color=red>con</color></b>, il s'est vautré !", new Vector3(893, 166.5f, 1222));
         Create3DTextLabel("Le bus des nouveaux arrivants !", new Vector3(880, 165, 1219));
+        TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(880, 165, 1219));
+    }
+
+    void JobsInit()
+    {
+        // Si le répertoire des métiers n'existe pas on le créé
+        string path_jobs = Application.dataPath + "/../Servers/" + serverName + "/Jobs/";
+        if (!Directory.Exists(path_jobs))
+        {
+            Directory.CreateDirectory(path_jobs);
+        }
+
+        // On récupère tous les dossiers de chaque métier pour effectuer une itération
+        string[] jobs_directories = Directory.GetDirectories(path_jobs);
+
+        // On charge tous les métiers à partir du répertoire que l'on a créé auparavant
+        for(int i = 0; i < jobs_directories.Length; i++)
+        {
+            if(File.Exists(jobs_directories[i] + "config.json"))
+            {
+                string jobStr = File.ReadAllText(jobs_directories[i] + "config.json");
+                Job job = JsonUtility.FromJson<Job>(jobStr);
+
+                jobs.Add(job.jobId, job);
+            }
+        }
+    }
+
+    void AccountsInit()
+    {
+        // Si le répertoire des comptes n'existe pas on le créé
+        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
+        if (!Directory.Exists(path_accounts))
+        {
+            Directory.CreateDirectory(path_accounts);
+        }
     }
 
     public static string CreateMD5(string input)
