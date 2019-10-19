@@ -326,6 +326,20 @@ public class Roleplay : Gamemode
         }
     }
 
+    public override void OnSecondUpdate()
+    {
+        NetworkIdentity[] Players = GetAllPlayers();
+        for(int i = 0; i < Players.Length; i++)
+        {
+            PlayerUpdate(Players[i].netId);
+        }
+    }
+
+    void PlayerUpdate(uint playerId)
+    {
+        
+    }
+
     public override void OnPlayerDisconnect(uint playerId)
     {
         base.OnPlayerDisconnect(playerId);
