@@ -442,7 +442,31 @@ public class Roleplay : Gamemode
                     _rpCharacter.health -= 10;
                     SetRPCharacter(playerId, JsonUtility.ToJson(_rpCharacter));
                     break;
+                case "fly":
+                    if(GetAccount(players[playerId]["steamId"]).adminLevel > 1)
+                    {
+
+                    }else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas les permissions d'utiliser cette commande</color>");
+                    }
+                    break;
             }
+        }
+    }
+
+    public Account GetAccount(string steamId)
+    {
+        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
+
+        if (File.Exists(path_accounts + steamId + ".json"))
+        {
+            string accountStr = File.ReadAllText(path_accounts + steamId + ".json");
+            return JsonUtility.FromJson<Account>(accountStr);
+        }
+        else
+        {
+            return new Account();
         }
     }
 
@@ -507,8 +531,8 @@ public class Roleplay : Gamemode
     {
         PlayerText textDraw = new PlayerText();
         textDraw.text = "Riverside RP";
-        textDraw.position.x = -50;
-        textDraw.position.y = 25;
+        textDraw.position.x = -60;
+        textDraw.position.y = 30;
         textDraw.size.x = 100;
         textDraw.size.y = 50;
         textDraw.alignment = 9;
