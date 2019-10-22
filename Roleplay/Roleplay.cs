@@ -20,7 +20,7 @@ public class Roleplay : Gamemode
     TextDialogJson TEXTDIALOG_WELCOME = new TextDialogJson
     {
         id = 2,
-        textContent = "Bienvenue sur Riverside Rôleplay ! Si vous voyez un bug, n'hésitez pas à nous le soumettre sur notre Discord.",
+        textContent = "Hey! Bienvenue sur Riverside Rôleplay, le serveur officiel de Nova-Life. Le mode de jeu de notre serveur est en constante évolution, n'hésitez pas à nous faire un retour de votre gameplay avec le /avis. Bon jeu à toi !",
         button1 = "Ok",
         title = "Bienvenue !",
         type = 0
@@ -77,6 +77,16 @@ public class Roleplay : Gamemode
         type = 1
     };
 
+    TextDialogJson TEXTDIALOG_OPINION = new TextDialogJson
+    {
+        id = 8,
+        textContent = "Vous souhaitez nous soumettre votre avis ? Écrivez-nous:",
+        button1 = "Soumettre",
+        button2 = "Annuler",
+        title = "VOTRE AVIS !",
+        type = 1
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
 
@@ -95,8 +105,10 @@ public class Roleplay : Gamemode
     public override void OnGamemodeInit()
     {
         base.OnGamemodeInit();
-        AccountsInit();
-        JobsInit();
+        Utils.gamemode = this;
+        Utils.AccountsInit();
+        Utils.JobsInit();
+
         CreateTextDraws();
         TextLabels();
     }
@@ -137,43 +149,12 @@ public class Roleplay : Gamemode
     {
         CreateTextDialog(playerId, TEXTDIALOG_LOGIN);
     }
-
-    // Fonction pour inscrire le compte dans le dossier Accounts du serveur
-    void RegisterAccount(Account account, uint playerId)
+    
+    public void OnRegisterAccount(uint playerId)
     {
-        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
-
-        if (!File.Exists(path_accounts + account.steamId + ".json"))
-        {
-            File.WriteAllText(path_accounts + account.steamId + ".json", JsonUtility.ToJson(account));
-            DestroyTextDialog(playerId, TEXTDIALOG_REGISTER.id);
-            SendClientMessage(playerId, "#ffffff", "Vous pouvez désormais vous créer un personnage !");
-            ShowCharacterCreation(playerId);
-        }
-    }
-
-    // Fonction pour tester si on peut connecter une compte
-    bool LoginAccount(string steamId, uint playerId, string password)
-    {
-        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
-
-        if (File.Exists(path_accounts + steamId + ".json"))
-        {
-            string accountStr = File.ReadAllText(path_accounts + steamId + ".json");
-            Account loginAccount = JsonUtility.FromJson<Account>(accountStr);
-
-            if(loginAccount.password == CreateMD5(password))
-            {
-                return true;
-            }else
-            {
-                return false;
-            }
-            
-        }else
-        {
-            return false;
-        }
+        DestroyTextDialog(playerId, TEXTDIALOG_REGISTER.id);
+        SendClientMessage(playerId, "#ffffff", "Vous pouvez désormais vous créer un personnage !");
+        ShowCharacterCreation(playerId);
     }
 
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
@@ -185,7 +166,7 @@ public class Roleplay : Gamemode
             string steamId = players[playerId]["steamId"];
             if(response.selectedButton == 1)
             {
-                if(LoginAccount(steamId, playerId, response.input))
+                if(Utils.LoginAccount(steamId, playerId, response.input))
                 {
                     DestroyTextDialog(playerId, TEXTDIALOG_LOGIN.id);
                     SendClientMessage(playerId, "#ffffff", "<color=cyan>[SERVEUR] </color>Vous vous êtes connecté avec succès !");
@@ -208,9 +189,9 @@ public class Roleplay : Gamemode
             {
                 string steamId = players[playerId]["steamId"];
                 Account account = new Account();
-                account.password = CreateMD5(response.input);
+                account.password = Utils.CreateMD5(response.input);
                 account.steamId = steamId;
-                RegisterAccount(account, playerId);
+                Utils.RegisterAccount(account, playerId);
             }else
             {
                 SendClientMessage(playerId, "#ffffff", "<color=red>Veuillez saisir un mot de passe !</color>");
@@ -324,6 +305,14 @@ public class Roleplay : Gamemode
             }
             
         }
+
+        if(response.id == TEXTDIALOG_OPINION.id)
+        {
+            if (response.selectedButton == 1)
+                Utils.CreateOpinion(playerId, response.input);
+            else
+                DestroyTextDialog(playerId, TEXTDIALOG_OPINION.id);
+        }
     }
 
     public override void OnPlayerDisconnect(uint playerId)
@@ -422,6 +411,8 @@ public class Roleplay : Gamemode
     {
         base.OnPlayerSpawn(playerId);
         CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
+
+        // Create player UI
         PlayerText playerUI = new PlayerText();
         playerUI.alignment = 7;
         playerUI.textAlignment = 6;
@@ -430,6 +421,9 @@ public class Roleplay : Gamemode
         RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
         playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
         players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
+        // End player UI
+
+
     }
 
     public override void OnPlayerUpdate(uint playerId)
@@ -495,58 +489,5 @@ public class Roleplay : Gamemode
         TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(818.036f, 165.078f, 1110.951f));
         TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(886.673f, 166.69f, 1233.943f));
 
-    }
-
-    void JobsInit()
-    {
-        // Si le répertoire des métiers n'existe pas on le créé
-        string path_jobs = Application.dataPath + "/../Servers/" + serverName + "/Jobs/";
-        if (!Directory.Exists(path_jobs))
-        {
-            Directory.CreateDirectory(path_jobs);
-        }
-
-        // On récupère tous les dossiers de chaque métier pour effectuer une itération
-        string[] jobs_directories = Directory.GetDirectories(path_jobs);
-
-        // On charge tous les métiers à partir du répertoire que l'on a créé auparavant
-        for(int i = 0; i < jobs_directories.Length; i++)
-        {
-            if(File.Exists(jobs_directories[i] + "config.json"))
-            {
-                string jobStr = File.ReadAllText(jobs_directories[i] + "config.json");
-                Job job = JsonUtility.FromJson<Job>(jobStr);
-
-                jobs.Add(job.jobId, job);
-            }
-        }
-    }
-
-    void AccountsInit()
-    {
-        // Si le répertoire des comptes n'existe pas on le créé
-        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
-        if (!Directory.Exists(path_accounts))
-        {
-            Directory.CreateDirectory(path_accounts);
-        }
-    }
-
-    public static string CreateMD5(string input)
-    {
-        // Use input string to calculate MD5 hash
-        using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
-        {
-            byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(input);
-            byte[] hashBytes = md5.ComputeHash(inputBytes);
-
-            // Convert the byte array to hexadecimal string
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            for (int i = 0; i < hashBytes.Length; i++)
-            {
-                sb.Append(hashBytes[i].ToString("X2"));
-            }
-            return sb.ToString();
-        }
-    }
+    }    
 }

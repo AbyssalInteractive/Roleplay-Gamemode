@@ -18,4 +18,8 @@
     public int glovesId;
     public int pantsId;
     public int shoesId;
+
+    // own infos
+
+    public bool isNewbieChatActivated;
 }
