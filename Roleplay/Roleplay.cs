@@ -147,8 +147,60 @@ public class Roleplay : Gamemode
         type = 2
     };
 
+    TextDialogJson TEXTDIALOG_ACTIVITES = new TextDialogJson
+    {
+        id = 15,
+        textContent = "",
+        button1 = "Sélectionner",
+        button2 = "Fermer",
+        listItems = new string[2] { "Miner", "Couper du bois" },
+        title = "Liste des activités",
+        type = 2
+    };
+
+    TextDialogJson TEXTDIALOG_ACTIVITE_MINER = new TextDialogJson
+    {
+        id = 16,
+        textContent = "\t <color=orange>ACTIVITÉ : MINER</color> \n Une activité longue et fastidieuse qui vous fera gagner quelques euros, rendez-vous à la mine (/gps)",
+        button1 = "Fermer",
+        title = "MINER",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_ACTIVITE_BOIS = new TextDialogJson
+    {
+        id = 17,
+        textContent = "\t <color=orange>ACTIVITÉ : COUPER DU BOIS</color> \n Une activité qui vous fera découvrir la beauté de la nature, et la destruction de celle-ci ! (/gps)",
+        button1 = "Fermer",
+        title = "MINER",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_GPS = new TextDialogJson
+    {
+        id = 18,
+        textContent = "",
+        button1 = "Sélectionner",
+        button2 = "Fermer",
+        listItems = new string[2] { "Mine", "Forêt" },
+        title = "Liste des destinations",
+        type = 2
+    };
+
+    TextDialogJson TEXTDIALOG_MARKET_01 = new TextDialogJson
+    {
+        id = 19,
+        textContent = "",
+        button1 = "Acheter",
+        button2 = "Fermer",
+        listItems = new string[2] { "Téléphone \t\t\t 350€", "GPS \t\t\t\t 250€" },
+        title = "Liste des produits",
+        type = 2
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
+    int TEXTLABEL_MARKET_01;
 
     public enum VehicleNames
     {
@@ -168,12 +220,13 @@ public class Roleplay : Gamemode
     {
         base.OnGamemodeInit();
         Utils.gamemode = this;
+        TextLabels();
         Utils.AccountsInit();
         Utils.JobsInit();
         Utils.LoadPhones();
 
         CreateTextDraws();
-        TextLabels();
+        
     }
 
     public override void OnPlayerCommand(uint playerId, string command)
@@ -223,6 +276,108 @@ public class Roleplay : Gamemode
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
     {
         base.OnTextDialogResponse(playerId, response);
+
+        if(response.id == TEXTDIALOG_MARKET_01.id)
+        {
+            if (response.selectedButton == 1) {
+                switch(response.selectedLine)
+                {
+                    case 0:
+                        if(characters[playerId].money >= 350)
+                        {
+                            if(string.IsNullOrEmpty(characters[playerId].phone))
+                            {
+                                RPCharacter rpCharacter = characters[playerId];
+                                rpCharacter.money -= 350;
+                                characters[playerId] = rpCharacter;
+                                Utils.GeneratePhone(playerId);
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>Vous avez acheté un téléphone !</color>");
+                                SendClientMessage(playerId, "#ffffff", "Votre numéro de téléphone : " + characters[playerId].phone);
+                            }
+                            else
+                            {
+                                SendClientMessage(playerId, "#ffffff", "<color=red>Vous avez déjà un téléphone.</color>");
+                            }                            
+                        }else
+                        {
+                            SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas assez d'argent !</color>");
+                        }
+                        break;
+                    case 1:
+                        if (characters[playerId].money >= 250)
+                        {
+                            if (!characters[playerId].gps)
+                            {
+                                RPCharacter rpCharacter = characters[playerId];
+                                rpCharacter.money -= 250;
+                                rpCharacter.gps = true;
+                                characters[playerId] = rpCharacter;
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>Vous avez acheté un GPS !</color>");
+                            }
+                            else
+                            {
+                                SendClientMessage(playerId, "#ffffff", "<color=red>Vous avez déjà un GPS.</color>");
+                            }
+                        }
+                        else
+                        {
+                            SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas assez d'argent !</color>");
+                        }
+                        break;
+                }
+                DestroyTextDialog(playerId, response.id);
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_GPS.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, response.id);
+                switch(response.selectedLine)
+                {
+                    case 0:
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[GPS]</color> : NOUVELLE DESTINATION >> MINE");
+                        break;
+                    case 1:
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[GPS]</color> : NOUVELLE DESTINATION >> FORÊT");
+                        break;
+                }
+                // TODO CREATE CHECKPOINT
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_ACTIVITES.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                switch(response.selectedLine)
+                {
+                    case 0:
+                        DestroyTextDialog(playerId, response.id);
+                        CreateTextDialog(playerId, TEXTDIALOG_ACTIVITE_MINER);
+                        break;
+                    case 1:
+                        DestroyTextDialog(playerId, response.id);
+                        CreateTextDialog(playerId, TEXTDIALOG_ACTIVITE_BOIS);
+                        break;
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        }
+
+        if (response.id == TEXTDIALOG_ACTIVITE_BOIS.id || response.id == TEXTDIALOG_ACTIVITE_MINER.id)
+        {
+            DestroyTextDialog(playerId, response.id);
+        }
 
         if(response.id == TEXTDIALOG_GUIDE_01.id)
         {
@@ -517,6 +672,9 @@ public class Roleplay : Gamemode
             {
                 // TODO : Création du dialog, validation de l'achat du véhicule
                 CreateTextDialog(playerId, TEXTDIALOG_BUYCAR);
+            }else if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_MARKET_01) < 2f)
+            {
+                CreateTextDialog(playerId, TEXTDIALOG_MARKET_01);
             }
         }
     }
@@ -532,6 +690,18 @@ public class Roleplay : Gamemode
 
             switch(args[0])
             {
+                case "activités":
+                    CreateTextDialog(playerId, TEXTDIALOG_ACTIVITES);
+                    break;
+                case "gps":
+                    if(characters[playerId].gps)
+                    {
+                        CreateTextDialog(playerId, TEXTDIALOG_GPS);
+                    }else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas de GPS, allez en acheter un au Supermarché</color>");
+                    }
+                    break;
                 case "atm":
                     if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_ATM) < 2)
                     {
@@ -546,7 +716,6 @@ public class Roleplay : Gamemode
                         SendClientMessage(playerId, "#ffffff", "<color=red>[DEBUG]</color> Distance : " + GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_ATM));
                         SendClientMessage(playerId, "#ffffff", "<color=red>[DEBUG]</color> ID : " + TEXTLABEL_ATM);
                     }
-                    
                     break;
                 case "respawn":
                     if(GetPlayerHealth(playerId) <= 0)
@@ -624,8 +793,60 @@ public class Roleplay : Gamemode
                     }
                     characters[playerId] = _rpCharacter1;
                     break;
-                case "testtab":
-                    CreateTextDialog(playerId, TEXTDIALOG_TESTTAB);
+                case "creerpnj":
+                    if(args.Length == 8)
+                    {
+                        int hairId = int.Parse(args[1]);
+                        int shoesId = int.Parse(args[2]);
+                        int tshirtId = int.Parse(args[3]);
+                        int vestId = int.Parse(args[4]);
+                        int pantsId = int.Parse(args[5]);
+                        int glovesId = int.Parse(args[6]);
+                        int backpackId = int.Parse(args[7]);
+                        uint npcId = CreateNPC(GetPlayerPos(playerId), GetPlayerRot(playerId), hairId, tshirtId, vestId, glovesId, pantsId, shoesId, backpackId);
+                        SendClientMessage(playerId, "#ffffff", "PNJ CRÉÉ : " + npcId);
+                        SetNPCUpText(npcId, "Jinx (" + npcId + ")");
+                    }
+                    else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /creerpnj [HAIRID] [SHOESID] [TSHIRTID] [VESTID] [PANTSID] [GLOVESID] [BACKPACKID]");
+                    }
+                    break;
+                case "modifierpnj":
+                    if (args.Length == 10)
+                    {
+                        uint npcId = uint.Parse(args[1]);
+                        int hairId = int.Parse(args[2]);
+                        int shoesId = int.Parse(args[3]);
+                        int tshirtId = int.Parse(args[4]);
+                        int vestId = int.Parse(args[5]);
+                        int pantsId = int.Parse(args[6]);
+                        int glovesId = int.Parse(args[7]);
+                        int backpackId = int.Parse(args[8]);
+                        int keepPosition = int.Parse(args[9]);
+                        if(keepPosition == 1)
+                        {
+                            UpdateNPC(npcId, GetNPCPos(npcId), GetNPCRot(npcId), hairId, tshirtId, vestId, glovesId, pantsId, shoesId, backpackId);
+                        }
+                        else
+                        {
+                            UpdateNPC(npcId, GetPlayerPos(playerId), GetPlayerRot(playerId), hairId, tshirtId, vestId, glovesId, pantsId, shoesId, backpackId);
+                        }
+
+                        SendClientMessage(playerId, "#ffffff", "PNJ MODIFIÉ : " + npcId);
+                        SetNPCUpText(npcId, "Jinx (" + npcId + ")");
+                    }
+                    else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /modifierpnj [NPCID] [HAIRID] [SHOESID] [TSHIRTID] [VESTID] [PANTSID] [GLOVESID] [BACKPACKID] [KEEPPOSITION]");
+                    }
+                    break;
+                case "setnpcpos":
+                    if(args.Length > 1)
+                    {
+                        uint npcId = uint.Parse(args[1]);
+                        SetNPCDestination(npcId, GetPlayerPos(playerId));
+                    }                    
                     break;
                 default:
                     SendClientMessage(playerId, "#ffffff", "<color=red>Cette commande n'est pas dans notre base de données</color>");
@@ -669,6 +890,8 @@ public class Roleplay : Gamemode
         playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
         players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
         // End player UI
+
+        SetPlayerUpText(playerId, Utils.GetRPName(playerId) + " (" + playerId + ")");
 
         if(players[playerId].ContainsKey("isFirstConnect"))
         {
@@ -742,6 +965,6 @@ public class Roleplay : Gamemode
     {
         TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(818.036f, 165.078f, 1110.951f));
         TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(886.673f, 166.69f, 1233.943f));
-
+        TEXTLABEL_MARKET_01 = Create3DTextLabel("<color=orange>F</color> pour consulter la liste des produits", new Vector3(791.4f, 165, 1146.3f));
     }    
 }
