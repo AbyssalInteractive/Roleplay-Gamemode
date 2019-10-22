@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.IO;
 using NovaLife.Server.Gamemode;
+using Mirror;
 
 public static class Utils
 {
@@ -74,6 +75,45 @@ public static class Utils
         }
     }
 
+    public static RPCharacter GetRPCharacter(uint playerId)
+    {
+        if(gamemode.IsValidPlayer(playerId))
+        {
+            return gamemode.characters[playerId];
+        }else
+        {
+            return new RPCharacter();
+        }
+    }
+
+    public static RPCharacter GetRPCharacterFromFile(uint playerId)
+    {
+        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(gamemode.GetRPCharacter(playerId));
+        string steamId = gamemode.players[playerId]["steamId"];
+        string path_character = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/" + steamId + "-" + rpCharacter.firstname + "-" + rpCharacter.lastname + ".json";
+        string json = File.ReadAllText(path_character);
+
+        return JsonUtility.FromJson<RPCharacter>(json);
+    }
+
+    public static void SendDistanceMessage(Vector3 origin, string message, float radius)
+    {
+        NetworkIdentity[] _players = gamemode.GetAllPlayers();
+        for (int i = 0; i < _players.Length; i++)
+        {
+            if (Vector3.Distance(origin, gamemode.GetPlayerPos(_players[i].netId)) < radius)
+            {
+                gamemode.SendClientMessage(_players[i].netId, "#ffffff", message);
+            }
+        }
+    }
+
+    public static string GetRPName(uint playerId)
+    {
+        RPCharacter rpCharacter = GetRPCharacter(playerId);
+        return rpCharacter.firstname + " " + rpCharacter.lastname;
+    }
+
     public static void CreateOpinion(uint playerId, string opinion)
     {
         // Si le répertoire des avis n'existe pas on le créé
@@ -88,7 +128,7 @@ public static class Utils
             gamemode.SendClientMessage(playerId, "#ffffff", "Votre avis ne doit pas être vide !");
         }else
         {
-            string steamId = gamemode.players[playerId]["steamid"];
+            string steamId = gamemode.players[playerId]["steamId"];
 
             if (!File.Exists(path_opinions + steamId + ".json"))
             {
@@ -103,7 +143,16 @@ public static class Utils
                 gamemode.SendClientMessage(playerId, "#ffffff", "Vous avez déjà soumis votre avis, merci ! Nous vous redemanderons votre avis à la prochaine mise à jour de notre mode de jeu !");
             }
         }
-        
+    }
+
+    public static void SaveRPCharacter(uint playerId)
+    {
+        RPCharacter rpCharacter = GetRPCharacter(playerId);
+        rpCharacter.timeSpentOnServerSinceLogin = 0;
+        string steamId = gamemode.players[playerId]["steamId"];
+        string path_character = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/" + steamId + "-" + rpCharacter.firstname + "-" + rpCharacter.lastname;
+
+        File.WriteAllText(path_character, JsonUtility.ToJson(rpCharacter));
     }
 
     public static void JobsInit()

@@ -87,6 +87,55 @@ public class Roleplay : Gamemode
         type = 1
     };
 
+    TextDialogJson TEXTDIALOG_GUIDE_01 = new TextDialogJson
+    {
+        id = 9,
+        textContent = "\t <color=orange>Les activités</color> \n Sur Riverside RP, vous avez de multiples activités pour gagner de l'argent facile telles que miner, couper du bois, etc. Pour plus d'infos faites <color=orange>/activités</color>",
+        button1 = "Suivant",
+        button2 = "Fermer",
+        title = "GUIDE 1/5",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_GUIDE_02 = new TextDialogJson
+    {
+        id = 10,
+        textContent = "\t <color=orange>Les métiers</color> \n Ce serveur possède plusieurs métiers comme Chauffeur de bus, Éboueur, Livreur, Gendarme, Ambulancier/Médecin, Pompiers, etc. Pour plus d'infos faites <color=orange>/aidejob</color>",
+        button1 = "Suivant",
+        button2 = "Fermer",
+        title = "GUIDE 2/5",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_GUIDE_03 = new TextDialogJson
+    {
+        id = 11,
+        textContent = "\t <color=orange>Les véhicules</color> \n Vous pouvez acheter un véhicule au concessionnaire, pour savoir où il se trouve, achetez un GPS au Supermarché et faites <color=orange>/gps</color>",
+        button1 = "Suivant",
+        button2 = "Fermer",
+        title = "GUIDE 3/5",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_GUIDE_04 = new TextDialogJson
+    {
+        id = 12,
+        textContent = "\t <color=orange>Les propriétés</color> \n Vous pouvez acheter une propriété, rendez-vous à la Mairie pour consulter les terrains disponibles",
+        button1 = "Suivant",
+        button2 = "Fermer",
+        title = "GUIDE 4/5",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_GUIDE_05 = new TextDialogJson
+    {
+        id = 13,
+        textContent = "\t <color=orange>Envie de plus ?</color> \n Faire le bien ne vous intéresse pas, vous êtes plutôt quelqu'un de l'ombre ? Faites <color=orange>/aidecriminel</color>",
+        button1 = "Fermer",
+        title = "GUIDE 5/5",
+        type = 0
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
 
@@ -101,6 +150,7 @@ public class Roleplay : Gamemode
     }
 
     public Dictionary<int, Job> jobs = new Dictionary<int, Job>();
+    public Dictionary<uint, RPCharacter> characters = new Dictionary<uint, RPCharacter>();
 
     public override void OnGamemodeInit()
     {
@@ -160,7 +210,68 @@ public class Roleplay : Gamemode
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
     {
         base.OnTextDialogResponse(playerId, response);
-        if(response.id == TEXTDIALOG_LOGIN.id)
+
+        if(response.id == TEXTDIALOG_GUIDE_01.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_01.id);
+                CreateTextDialog(playerId, TEXTDIALOG_GUIDE_02);
+            }
+            else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_01.id);
+            }
+        }
+
+        if (response.id == TEXTDIALOG_GUIDE_02.id)
+        {
+            if (response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_02.id);
+                CreateTextDialog(playerId, TEXTDIALOG_GUIDE_03);
+            }
+            else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_02.id);
+            }
+        }
+
+        if (response.id == TEXTDIALOG_GUIDE_03.id)
+        {
+            if (response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_03.id);
+                CreateTextDialog(playerId, TEXTDIALOG_GUIDE_04);
+            }
+            else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_03.id);
+            }
+        }
+
+        if (response.id == TEXTDIALOG_GUIDE_04.id)
+        {
+            if (response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_04.id);
+                CreateTextDialog(playerId, TEXTDIALOG_GUIDE_05);
+            }
+            else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_04.id);
+            }
+        }
+
+        if (response.id == TEXTDIALOG_GUIDE_05.id)
+        {
+            if (response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_GUIDE_05.id);
+            }
+        }
+
+        if (response.id == TEXTDIALOG_LOGIN.id)
         {
             // On récupère le steamId du joueur
             string steamId = players[playerId]["steamId"];
@@ -326,11 +437,15 @@ public class Roleplay : Gamemode
 
     void PlayerUpdate(uint playerId)
     {
-        
+        RPCharacter rpCharacter = characters[playerId];
+        rpCharacter.timeSpentOnServer += 1;
+        rpCharacter.timeSpentOnServerSinceLogin += 1;
     }
 
     public override void OnPlayerDisconnect(uint playerId)
     {
+        Utils.SaveRPCharacter(playerId);
+        characters.Remove(playerId);
         base.OnPlayerDisconnect(playerId);
     }
 
@@ -394,6 +509,7 @@ public class Roleplay : Gamemode
     public override void OnPlayerMessage(string message, uint playerId)
     {
         base.OnPlayerMessage(message, playerId);
+        // COMMANDES
         if(message.Substring(0, 1) == "/")
         {
             string command = message.Substring(1);
@@ -434,13 +550,54 @@ public class Roleplay : Gamemode
                 case "fly":
                     if(GetAccount(players[playerId]["steamId"]).adminLevel > 1)
                     {
-
+                        SetPlayerFly(playerId, !GetPlayerFly(playerId));
                     }else
                     {
                         SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas les permissions d'utiliser cette commande</color>");
                     }
                     break;
+                case "avis":
+                    CreateTextDialog(playerId, TEXTDIALOG_OPINION);
+                    break;
+                case "guide":
+                    CreateTextDialog(playerId, TEXTDIALOG_GUIDE_01);
+                    break;
+                case "crier": case "c":
+                    if (args.Length > 1)
+                        Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " crie: " + message.Substring(args[0].Length+1), 15f);
+                    else
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /c(rier) [MESSAGE]");
+                    break;
+                case "ch": case "chuchoter":
+                    if (args.Length > 1)
+                        Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " chuchote: " + message.Substring(args[0].Length+1), 2f);
+                    else
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /ch(uchote) [MESSAGE]");
+                    break;
+                case "me":
+                    if (args.Length > 1)
+                        Utils.SendDistanceMessage(GetPlayerPos(playerId), "<color=#912091>" + Utils.GetRPName(playerId) + message.Substring(args[0].Length + 1) + "</color>", 7.5f);
+                    else
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /me [ACTION]");
+                    break;
+                case "stats":
+                    string permisB = "non";
+                    float hoursSpend = Mathf.Round(characters[playerId].timeSpentOnServer / 3600);
+
+                    if (characters[playerId].licenseB) permisB = "oui";
+
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>___" + Utils.GetRPName(playerId) + "___</color>");
+                    
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>Permis B : "+ permisB +" | Argent en poche : "+ characters[playerId].money +"€</color>");
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>Argent en banque : "+ characters[playerId].bank +" | Heures passées sur le serveur : "+ hoursSpend +"</color>");
+                    break;
+                default:
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Cette commande n'est pas dans notre base de données</color>");
+                    break;
             }
+        }else
+        {
+            Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " dit: " + message, 7.5f);
         }
     }
 
@@ -462,6 +619,7 @@ public class Roleplay : Gamemode
     public override void OnPlayerSpawn(uint playerId)
     {
         base.OnPlayerSpawn(playerId);
+        characters.Add(playerId, Utils.GetRPCharacterFromFile(playerId));
         CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
 
         // Create player UI
@@ -475,7 +633,13 @@ public class Roleplay : Gamemode
         players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
         // End player UI
 
-
+        if(players[playerId].ContainsKey("isFirstConnect"))
+        {
+            SendClientMessage(playerId, "#ffffff", "<color=orange>Bienvenue sur Riverside Rôleplay</color>");
+            SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/guide</color> si vous avez besoin d'aide");
+            SendClientMessage(playerId, "#ffffff", "En cas de besoin utilisez le salon <color=#ebcf60>/n(ouveau)</color>");
+            SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/aiderp</color> si vous ne connaissez pas le RP");
+        }
     }
 
     public override void OnPlayerUpdate(uint playerId)
@@ -539,9 +703,6 @@ public class Roleplay : Gamemode
     // Les différents 3DTextLabels de la carte
     void TextLabels()
     {
-        Create3DTextLabel("Utilisez <color=#3480eb>/téléphoner</color> [numéro]", new Vector3(878, 165, 1235));
-        Create3DTextLabel("Regardez le <b><color=red>con</color></b>, il s'est vautré !", new Vector3(893, 166.5f, 1222));
-        Create3DTextLabel("Le bus des nouveaux arrivants !", new Vector3(880, 165, 1219));
         TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(818.036f, 165.078f, 1110.951f));
         TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(886.673f, 166.69f, 1233.943f));
 

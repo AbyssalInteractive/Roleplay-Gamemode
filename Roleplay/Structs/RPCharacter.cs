@@ -8,7 +8,6 @@
     public float bank;
     public bool licenseB;
     public float health;
-    public int adminLevel;
 
     public int sexId;
     public int hairId;
@@ -22,4 +21,6 @@
     // own infos
 
     public bool isNewbieChatActivated;
+    public int timeSpentOnServer;
+    public int timeSpentOnServerSinceLogin;
 }
