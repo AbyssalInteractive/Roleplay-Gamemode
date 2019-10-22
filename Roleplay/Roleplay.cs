@@ -195,7 +195,7 @@ public class Roleplay : Gamemode
             }else
             {
                 SendClientMessage(playerId, "#ffffff", "<color=red>Veuillez saisir un mot de passe !</color>");
-            }            
+            }
         }else if(response.id == TEXTDIALOG_REGISTER.id && response.selectedButton == 2)
         {
             Kick(playerId);
@@ -315,6 +315,20 @@ public class Roleplay : Gamemode
         }
     }
 
+    public override void OnSecondUpdate()
+    {
+        NetworkIdentity[] Players = GetAllPlayers();
+        for(int i = 0; i < Players.Length; i++)
+        {
+            PlayerUpdate(Players[i].netId);
+        }
+    }
+
+    void PlayerUpdate(uint playerId)
+    {
+        
+    }
+
     public override void OnPlayerDisconnect(uint playerId)
     {
         base.OnPlayerDisconnect(playerId);
@@ -403,7 +417,45 @@ public class Roleplay : Gamemode
                     }
                     
                     break;
+                case "respawn":
+                    if(GetPlayerHealth(playerId) <= 0)
+                    {
+                        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+                        rpCharacter.health = 100;
+                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
+                        SetPlayerPos(playerId, new Vector3(880, 165, 1219));
+                    }
+                    break;
+                case "takedamage":
+                    RPCharacter _rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+                    _rpCharacter.health -= 10;
+                    SetRPCharacter(playerId, JsonUtility.ToJson(_rpCharacter));
+                    break;
+                case "fly":
+                    if(GetAccount(players[playerId]["steamId"]).adminLevel > 1)
+                    {
+
+                    }else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas les permissions d'utiliser cette commande</color>");
+                    }
+                    break;
             }
+        }
+    }
+
+    public Account GetAccount(string steamId)
+    {
+        string path_accounts = Application.dataPath + "/../Servers/" + serverName + "/Accounts/";
+
+        if (File.Exists(path_accounts + steamId + ".json"))
+        {
+            string accountStr = File.ReadAllText(path_accounts + steamId + ".json");
+            return JsonUtility.FromJson<Account>(accountStr);
+        }
+        else
+        {
+            return new Account();
         }
     }
 
@@ -435,6 +487,7 @@ public class Roleplay : Gamemode
     {
         base.OnRPCharacterUpdate(playerId, _rpCharacter);
         string playerTextID;
+        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(_rpCharacter);
         if (players[playerId].TryGetValue("playerUI", out playerTextID))
         {
             PlayerText playerUI = new PlayerText();
@@ -442,10 +495,13 @@ public class Roleplay : Gamemode
             playerUI.textAlignment = 6;
             playerUI.position = new Vector2(305.7f, 120.7f);
             playerUI.size = new Vector2(581.5f, 191.4f);
-            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(_rpCharacter);
-            SendClientMessage(playerId, "#ffffff", "Nouveau solde : " + rpCharacter.money);
             playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + (int)rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
             PlayerTextDrawUpdate(playerId, int.Parse(playerTextID), playerUI);
+        }
+
+        if(rpCharacter.health <= 0)
+        {
+            SendClientMessage(playerId, "#ffffff", "Vous êtes mort, faites /respawn");
         }
     }
 
@@ -469,8 +525,8 @@ public class Roleplay : Gamemode
     {
         PlayerText textDraw = new PlayerText();
         textDraw.text = "Riverside RP";
-        textDraw.position.x = -50;
-        textDraw.position.y = 25;
+        textDraw.position.x = -60;
+        textDraw.position.y = 30;
         textDraw.size.x = 100;
         textDraw.size.y = 50;
         textDraw.alignment = 9;
