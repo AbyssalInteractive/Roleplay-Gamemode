@@ -136,6 +136,17 @@ public class Roleplay : Gamemode
         type = 0
     };
 
+    TextDialogJson TEXTDIALOG_TESTTAB = new TextDialogJson
+    {
+        id = 14,
+        textContent = "",
+        button1 = "Sélectionner",
+        button2 = "Fermer",
+        listItems = new string[10] { "Téléphone \t\t\t 1500€", "GPS \t\t\t\t1500€", "Téléphone \t\t\t 1500€", "GPS \t\t\t\t1500€", "Téléphone \t\t\t 1500€", "GPS \t\t\t\t1500€", "Téléphone \t\t\t 1500€", "GPS \t\t\t\t1500€", "Téléphone \t\t\t 1500€", "GPS \t\t\t\t1500€", },
+        title = "TAB",
+        type = 2
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
 
@@ -151,6 +162,7 @@ public class Roleplay : Gamemode
 
     public Dictionary<int, Job> jobs = new Dictionary<int, Job>();
     public Dictionary<uint, RPCharacter> characters = new Dictionary<uint, RPCharacter>();
+    public Dictionary<string, RPCharacter> phones = new Dictionary<string, RPCharacter>();
 
     public override void OnGamemodeInit()
     {
@@ -158,6 +170,7 @@ public class Roleplay : Gamemode
         Utils.gamemode = this;
         Utils.AccountsInit();
         Utils.JobsInit();
+        Utils.LoadPhones();
 
         CreateTextDraws();
         TextLabels();
@@ -353,7 +366,7 @@ public class Roleplay : Gamemode
 
         if(response.id == TEXTDIALOG_ATM_DEPOSIT.id)
         {
-            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+            RPCharacter rpCharacter = characters[playerId];
             float money = float.Parse(response.input);
             if (response.selectedButton == 1)
             {
@@ -386,7 +399,7 @@ public class Roleplay : Gamemode
 
         if(response.id == TEXTDIALOG_ATM_WITHDRAW.id)
         {
-            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+            RPCharacter rpCharacter = characters[playerId];
             float money = float.Parse(response.input);
 
             if(response.selectedButton == 1)
@@ -424,6 +437,15 @@ public class Roleplay : Gamemode
             else
                 DestroyTextDialog(playerId, TEXTDIALOG_OPINION.id);
         }
+
+        if(response.id == TEXTDIALOG_TESTTAB.id)
+        {
+            SendClientMessage(playerId, "#ffffff", response.selectedLine + " " + response.selectedButton);
+            if(response.selectedButton == 2)
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_TESTTAB.id);
+            }
+        }
     }
 
     public override void OnSecondUpdate()
@@ -437,9 +459,15 @@ public class Roleplay : Gamemode
 
     void PlayerUpdate(uint playerId)
     {
-        RPCharacter rpCharacter = characters[playerId];
-        rpCharacter.timeSpentOnServer += 1;
-        rpCharacter.timeSpentOnServerSinceLogin += 1;
+        if (characters.ContainsKey(playerId))
+        {
+            RPCharacter rpCharacter = new RPCharacter();
+            rpCharacter = characters[playerId];
+            rpCharacter.timeSpentOnServer = rpCharacter.timeSpentOnServer + 1;
+            rpCharacter.timeSpentOnServerSinceLogin = rpCharacter.timeSpentOnServerSinceLogin + 1;
+            characters[playerId] = rpCharacter;
+            Utils.SaveRPCharacter(playerId);
+        }        
     }
 
     public override void OnPlayerDisconnect(uint playerId)
@@ -453,19 +481,6 @@ public class Roleplay : Gamemode
     {
         base.OnPlayerEnterVehicle(playerId, vehicleId);
 
-        // Création de l'interface du véhicule
-        PlayerText textDraw = new PlayerText();
-        textDraw.text = "Your vehicle : " + vehicleId;
-        textDraw.position.x = -50;
-        textDraw.position.y = 25;
-        textDraw.size.x = 100;
-        textDraw.size.y = 50;
-        textDraw.alignment = 9;
-        textDraw.textAlignment = 8;
-        textDraw.outline = true;
-        textDraw.shadow = true;        
-        TextDrawUpdate(0, textDraw);
-
         // On teste le véhicule appartient au joueur
         if(IsPlayerVehicle(playerId, vehicleId))
         {
@@ -474,7 +489,7 @@ public class Roleplay : Gamemode
         {
             SendClientMessage(playerId, "#96121d", "Ce véhicule ne vous appartient pas.");
         }
-        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+        RPCharacter rpCharacter = characters[playerId];
 
         if(rpCharacter.licenseB == false)
         {
@@ -521,7 +536,7 @@ public class Roleplay : Gamemode
                     if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_ATM) < 2)
                     {
                         TextDialogJson textDialog = TEXTDIALOG_ATM;
-                        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+                        RPCharacter rpCharacter = characters[playerId];
                         textDialog.textContent = "Votre solde bancaire : " + rpCharacter.bank + "€";
                         CreateTextDialog(playerId, textDialog);
                     }
@@ -536,14 +551,14 @@ public class Roleplay : Gamemode
                 case "respawn":
                     if(GetPlayerHealth(playerId) <= 0)
                     {
-                        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+                        RPCharacter rpCharacter = characters[playerId];
                         rpCharacter.health = 100;
                         SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
                         SetPlayerPos(playerId, new Vector3(880, 165, 1219));
                     }
                     break;
                 case "takedamage":
-                    RPCharacter _rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
+                    RPCharacter _rpCharacter = characters[playerId];
                     _rpCharacter.health -= 10;
                     SetRPCharacter(playerId, JsonUtility.ToJson(_rpCharacter));
                     break;
@@ -564,13 +579,13 @@ public class Roleplay : Gamemode
                     break;
                 case "crier": case "c":
                     if (args.Length > 1)
-                        Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " crie: " + message.Substring(args[0].Length+1), 15f);
+                        Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " ("+playerId+") crie: " + message.Substring(args[0].Length+1), 15f);
                     else
                         SendClientMessage(playerId, "#ffffff", "USAGE: /c(rier) [MESSAGE]");
                     break;
                 case "ch": case "chuchoter":
                     if (args.Length > 1)
-                        Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " chuchote: " + message.Substring(args[0].Length+1), 2f);
+                        Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + "(" + playerId + ") chuchote: " + message.Substring(args[0].Length+1), 2f);
                     else
                         SendClientMessage(playerId, "#ffffff", "USAGE: /ch(uchote) [MESSAGE]");
                     break;
@@ -589,7 +604,28 @@ public class Roleplay : Gamemode
                     SendClientMessage(playerId, "#ffffff", "<color=orange>___" + Utils.GetRPName(playerId) + "___</color>");
                     
                     SendClientMessage(playerId, "#ffffff", "<color=orange>Permis B : "+ permisB +" | Argent en poche : "+ characters[playerId].money +"€</color>");
-                    SendClientMessage(playerId, "#ffffff", "<color=orange>Argent en banque : "+ characters[playerId].bank +" | Heures passées sur le serveur : "+ hoursSpend +"</color>");
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>Argent en banque : "+ characters[playerId].bank +"€ | Heures passées sur le serveur : "+ hoursSpend +"h</color>");
+                    break;
+                case "n": case "nouveau":
+                    if(!characters[playerId].isNewbieChatMuted)
+                    {
+                        SendBroadcastMessage("#ffffff", "<color=#38c95a>(Salon Nouveau) " + Utils.GetRPName(playerId) + " (" + playerId + ") : " + message.Substring(args[0].Length + 1) + "</color>");
+                    }
+                    break;
+                case "mutenouveau":
+                    RPCharacter _rpCharacter1 = characters[playerId];
+                    _rpCharacter1.isNewbieChatMuted = !_rpCharacter1.isNewbieChatMuted;
+                    if(!_rpCharacter1.isNewbieChatMuted)
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=#38c95a>Salon nouveau activé</color>");
+                    }else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=#38c95a>Salon nouveau désactivé</color>");
+                    }
+                    characters[playerId] = _rpCharacter1;
+                    break;
+                case "testtab":
+                    CreateTextDialog(playerId, TEXTDIALOG_TESTTAB);
                     break;
                 default:
                     SendClientMessage(playerId, "#ffffff", "<color=red>Cette commande n'est pas dans notre base de données</color>");
@@ -597,7 +633,7 @@ public class Roleplay : Gamemode
             }
         }else
         {
-            Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " dit: " + message, 7.5f);
+            Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " (" + playerId + ") dit: " + message, 7.5f);
         }
     }
 
@@ -619,7 +655,9 @@ public class Roleplay : Gamemode
     public override void OnPlayerSpawn(uint playerId)
     {
         base.OnPlayerSpawn(playerId);
-        characters.Add(playerId, Utils.GetRPCharacterFromFile(playerId));
+        RPCharacter rpCharacter = new RPCharacter();
+        rpCharacter = Utils.GetRPCharacterFromFile(playerId);
+        characters.Add(playerId, rpCharacter);
         CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
 
         // Create player UI
@@ -628,7 +666,6 @@ public class Roleplay : Gamemode
         playerUI.textAlignment = 6;
         playerUI.position = new Vector2(305.7f, 120.7f);
         playerUI.size = new Vector2(581.5f, 191.4f);
-        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(GetRPCharacter(playerId));
         playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
         players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
         // End player UI

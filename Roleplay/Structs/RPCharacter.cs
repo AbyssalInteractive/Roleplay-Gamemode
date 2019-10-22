@@ -20,7 +20,9 @@
 
     // own infos
 
-    public bool isNewbieChatActivated;
+    public bool isNewbieChatMuted;
     public int timeSpentOnServer;
     public int timeSpentOnServerSinceLogin;
+    public bool gps;
+    public string phone;
 }

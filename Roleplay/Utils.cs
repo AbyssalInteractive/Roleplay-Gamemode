@@ -147,12 +147,27 @@ public static class Utils
 
     public static void SaveRPCharacter(uint playerId)
     {
-        RPCharacter rpCharacter = GetRPCharacter(playerId);
+        RPCharacter rpCharacter = new RPCharacter();
+        rpCharacter = GetRPCharacter(playerId);
         rpCharacter.timeSpentOnServerSinceLogin = 0;
         string steamId = gamemode.players[playerId]["steamId"];
-        string path_character = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/" + steamId + "-" + rpCharacter.firstname + "-" + rpCharacter.lastname;
+        string path_character = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/" + steamId + "-" + rpCharacter.firstname + "-" + rpCharacter.lastname + ".json";
 
         File.WriteAllText(path_character, JsonUtility.ToJson(rpCharacter));
+    }
+
+    public static void LoadPhones()
+    {
+        string path_character = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/";
+        string[] files = Directory.GetFiles(path_character);
+        for(int i = 0; i < files.Length; i++)
+        {
+            RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(File.ReadAllText(path_character));
+            if(!string.IsNullOrEmpty(rpCharacter.phone))
+            {
+                gamemode.phones.Add(rpCharacter.phone, rpCharacter);
+            }
+        }
     }
 
     public static void JobsInit()
@@ -177,6 +192,20 @@ public static class Utils
 
                 gamemode.jobs.Add(job.jobId, job);
             }
+        }
+    }
+
+    public static void GeneratePhone(uint playerId) 
+    {
+        string phone = "06" + Random.Range(10000000, 99999999);
+        if(gamemode.phones.ContainsKey(phone))
+        {
+            GeneratePhone(playerId);
+        }else
+        {
+            RPCharacter rpCharacter = gamemode.characters[playerId];
+            rpCharacter.phone = phone;
+            gamemode.characters[playerId] = rpCharacter;
         }
     }
 }
