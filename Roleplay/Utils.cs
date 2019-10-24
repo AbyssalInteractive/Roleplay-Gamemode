@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using NovaLife.Server.Gamemode;
 using Mirror;
@@ -193,6 +195,19 @@ public static class Utils
                 gamemode.jobs.Add(job.jobId, job);
             }
         }
+    }
+
+    public static uint GetPlayerIdFromPhone(string phone)
+    {
+        foreach(KeyValuePair<uint, RPCharacter> entry in gamemode.characters)
+        {
+            if(entry.Value.phone == phone)
+            {
+                return entry.Key;
+            }
+        }
+
+        return 0;
     }
 
     public static void GeneratePhone(uint playerId) 
