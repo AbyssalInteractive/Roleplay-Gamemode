@@ -149,6 +149,12 @@ public class Roleplay : Gamemode
 
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
+    int TEXTLABEL_TOWNHALL_BUSINESS;
+    int TEXTLABEL_TOWNHALL_JOBS;
+    int TEXTLABEL_PHONE;
+    int TEXTLABEL_BUS_STOP_01;
+    int TEXTLABEL_JOB_ELECTECHNICIAN_01;
+    int TEXTLABEL_JOB_ELECTECHNICIAN_02;
 
     public enum VehicleNames
     {
@@ -741,7 +747,13 @@ public class Roleplay : Gamemode
     void TextLabels()
     {
         TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(818.036f, 165.078f, 1110.951f));
-        TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(886.673f, 166.69f, 1233.943f));
+        TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(821.2f, 166.5f, 1069.6f));
+        TEXTLABEL_BUS_STOP_01 = Create3DTextLabel("<color=orange>F</color> pour voir les bus en service", new Vector3(811.2f, 165.9f, 1077.8f));
+        TEXTLABEL_JOB_ELECTECHNICIAN_01 = Create3DTextLabel("<color=orange>F</color> pour inspecter l'armoire électrique", new Vector3(839.2f, 166.5f, 1069.4f));
+        TEXTLABEL_JOB_ELECTECHNICIAN_02 = Create3DTextLabel("<color=orange>F</color> pour inspecter l'armoire électrique", new Vector3(841.6f, 166.5f, 1069.4f));
+        TEXTLABEL_PHONE = Create3DTextLabel("<color=orange>/t appel</color> pour utiliser la cabine téléphonique", new Vector3(812.3f, 165.9f, 1069f));
+        TEXTLABEL_TOWNHALL_BUSINESS = Create3DTextLabel("<color=orange>F</color> pour créer une entreprise", new Vector3(824.6f, 166.5f, 1074.4f));
+        TEXTLABEL_TOWNHALL_JOBS = Create3DTextLabel("<color=orange>F</color> pour consulter la liste des métiers", new Vector3(827.2f, 166.5f, 1076.5f));
 
-    }    
+    }
 }
