@@ -25,4 +25,5 @@
     public int timeSpentOnServerSinceLogin;
     public bool gps;
     public string phone;
+    public string bizName;
 }

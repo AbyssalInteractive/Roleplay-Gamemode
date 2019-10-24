@@ -46,6 +46,9 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Build\Game\Nova-Life_Data\Managed\UnityEngine.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Builds\Game\Nova-Life_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
@@ -55,6 +58,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Structs\Account.cs" />
+    <Compile Include="Structs\Business.cs" />
     <Compile Include="Structs\Job.cs" />
     <Compile Include="Roleplay.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

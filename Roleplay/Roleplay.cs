@@ -3,6 +3,7 @@ using Mirror;
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
+using System.Collections;
 
 public class Roleplay : Gamemode
 {
@@ -198,6 +199,56 @@ public class Roleplay : Gamemode
         type = 2
     };
 
+    TextDialogJson TEXTDIALOG_BUS_SERVICE = new TextDialogJson
+    {
+        id = 20,
+        textContent = "",
+        button1 = "Fermer",
+        listItems = new string[1] { "Aucun bus en service actuellement" },
+        title = "Liste des bus en service",
+        type = 2
+    };
+
+    TextDialogJson TEXTDIALOG_PHONE_01 = new TextDialogJson
+    {
+        id = 21,
+        textContent = "Veuillez insérer une pièce de 2€",
+        button1 = "Insérer",
+        button2 = "Fermer",
+        title = "Cabine téléphonique",
+        type = 0
+    };
+
+    TextDialogJson TEXTDIALOG_PHONE_CALL = new TextDialogJson
+    {
+        id = 22,
+        textContent = "Sasissez le numéro de téléphone à appeler :",
+        button1 = "Appeler",
+        button2 = "Fermer",
+        title = "Cabine téléphonique",
+        type = 1
+    };
+
+    TextDialogJson TEXTDIALOG_CREATE_BIZ = new TextDialogJson
+    {
+        id = 23,
+        textContent = "Saisissez le nom de votre entreprise :",
+        button1 = "Valider",
+        button2 = "Fermer",
+        title = "Création d'entreprise",
+        type = 1
+    };
+
+    TextDialogJson TEXTDIALOG_CREATE_BIZ_VALIDATE = new TextDialogJson
+    {
+        id = 24,
+        textContent = "Vous acceptez de payer 7500€ pour créer votre entreprise au nom de ",
+        button1 = "Valider",
+        button2 = "Fermer",
+        title = "Création d'entreprise - Confirmation",
+        type = 0
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
     int TEXTLABEL_MARKET_01;
@@ -219,6 +270,7 @@ public class Roleplay : Gamemode
     }
 
     public Dictionary<int, Job> jobs = new Dictionary<int, Job>();
+    public Dictionary<string, Business> bizs = new Dictionary<string, Business>();
     public Dictionary<uint, RPCharacter> characters = new Dictionary<uint, RPCharacter>();
     public Dictionary<string, RPCharacter> phones = new Dictionary<string, RPCharacter>();
 
@@ -227,6 +279,7 @@ public class Roleplay : Gamemode
         base.OnGamemodeInit();
         Utils.gamemode = this;
         TextLabels();
+        Utils.BizsInit();
         Utils.AccountsInit();
         Utils.JobsInit();
         Utils.LoadPhones();
@@ -280,9 +333,138 @@ public class Roleplay : Gamemode
         ShowCharacterCreation(playerId);
     }
 
+    public IEnumerator Call(uint playerId, uint recipientId)
+    {
+        yield return new WaitForSeconds(20f);
+        if(!players[playerId].ContainsKey("currentCall"))
+        {
+            SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La personne que vous tentez de joindre n'est pas disponible pour le moment.");
+            Utils.SendDistanceMessage(GetPlayerPos(playerId), "<color=#912091> " + Utils.GetRPName(playerId) + " range son téléphone</color>", 7.5f);
+            players[recipientId].Remove("incomingCall");
+        }
+    }
+
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
     {
         base.OnTextDialogResponse(playerId, response);
+
+        if(response.id == TEXTDIALOG_CREATE_BIZ_VALIDATE.id)
+        {
+            if(response.selectedButton == 1)
+            {
+
+                if(characters[playerId].money >= 7500)
+                {
+                    if(Utils.CreateBiz(players[playerId]["biz_name"], playerId))
+                    {
+                        RPCharacter rpCharacter = characters[playerId];
+                        rpCharacter.money -= 7500;
+                        characters[playerId] = rpCharacter;
+                        SendClientMessage(playerId, "#ffffff", "<color=green>L'entreprise " + players[playerId]["biz_name"] + " a été créée avec succès !</color>");
+                    }
+                    else
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=red>Impossible de créer l'entreprise car vous possédez déjà une entreprise ou une entreprise existe déjà sous ce nom.</color>");
+
+                    }
+                }
+                else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas 7500€ sur vous.</color>");
+                }
+                DestroyTextDialog(playerId, TEXTDIALOG_CREATE_BIZ_VALIDATE.id);
+            }
+            else
+            {
+                DestroyTextDialog(playerId, TEXTDIALOG_CREATE_BIZ_VALIDATE.id);
+            }
+            
+        }
+
+        if(response.id == TEXTDIALOG_CREATE_BIZ.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, response.id);
+
+                if (players[playerId].ContainsKey("biz_name"))
+                    players[playerId].Remove("biz_name");
+                if(response.input.Length < 3)
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Le nom de votre entreprise est trop court (min. 3 caractères) !</color>");
+                }else
+                {
+                    players[playerId].Add("biz_name", response.input);
+                    TextDialogJson textDialJson = TEXTDIALOG_CREATE_BIZ_VALIDATE;
+                    textDialJson.textContent = "Vous acceptez de payer <color=orange>7500€</color> pour créer votre entreprise au nom de " + response.input;
+                    CreateTextDialog(playerId, textDialJson);
+
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+
+            
+        }
+
+        if(response.id == TEXTDIALOG_PHONE_CALL.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, response.id);
+                SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Appel en cours...");
+                string phone = response.input;
+                uint recipientId = Utils.GetPlayerIdFromPhone(phone);
+                if (recipientId != 0)
+                {
+                    if(players[recipientId].ContainsKey("currentCall") || players[recipientId].ContainsKey("incomingCall"))
+                    {
+                        SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La ligne est occupée.");
+                    }else
+                    {
+                        // TODO Freeze player
+                        players[playerId].Add("currentCall", recipientId.ToString());
+                        players[recipientId].Add("incomingCall", playerId.ToString());
+                        SendClientMessage(recipientId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Appel entrant d'une Cabine Téléphonique. /t dec(rocher) pour prendre l'appel ou /t rac(crocher)");
+                        Utils.SendDistanceMessage(GetPlayerPos(recipientId), "<color=#912091>** Le téléphone de " + Utils.GetRPName(recipientId) + " sonne **</color>", 7.5f);
+                        GamemodesManager.instance.StartCoroutine(Call(playerId, recipientId));
+                    }
+                } else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Le numéro que vous avez composé n'est attribué ou n'est pas disponible.");
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_PHONE_01.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, response.id);
+                if (characters[playerId].money >= 2)
+                {
+                    RPCharacter rpCharacter = characters[playerId];
+                    rpCharacter.money -= 2;
+                    characters[playerId] = rpCharacter;
+                    CreateTextDialog(playerId, TEXTDIALOG_PHONE_CALL);
+                }else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas assez d'argent ! </color>");
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_BUS_SERVICE.id)
+        {
+            DestroyTextDialog(playerId, TEXTDIALOG_BUS_SERVICE.id);
+        }
 
         if (response.id == TEXTDIALOG_MARKET_01.id)
         {
@@ -547,7 +729,7 @@ public class Roleplay : Gamemode
                     {
                         rpCharacter.money = rpCharacter.money - money;
                         rpCharacter.bank = money + rpCharacter.bank;
-                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
+                        characters[playerId] = rpCharacter;
                         DestroyTextDialog(playerId, TEXTDIALOG_ATM_DEPOSIT.id);
                         SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=#36bf4a>Nouveau solde bancaire : " + rpCharacter.bank + "€ !</color>");
                     }
@@ -581,7 +763,7 @@ public class Roleplay : Gamemode
                     {
                         rpCharacter.money = money + rpCharacter.money;
                         rpCharacter.bank = rpCharacter.bank - money;
-                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
+                        characters[playerId] = rpCharacter;
                         DestroyTextDialog(playerId, TEXTDIALOG_ATM_WITHDRAW.id);
                         SendClientMessage(playerId, "#ffffff", "<color=orange>[ATM] </color><color=#36bf4a>Nouveau solde bancaire : " + rpCharacter.bank + "€ !</color>");
                     }
@@ -694,6 +876,23 @@ public class Roleplay : Gamemode
             else if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_MARKET_01) < 2f)
             {
                 CreateTextDialog(playerId, TEXTDIALOG_MARKET_01);
+            }
+            else if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_BUS_STOP_01) < 2f)
+            {
+                CreateTextDialog(playerId, TEXTDIALOG_BUS_SERVICE);
+            }
+            else if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_PHONE) < 2f)
+            {
+                if(players[playerId].ContainsKey("currentCall"))
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Vous êtes déjà en appel téléphonique !</color>");
+                }else
+                {
+                    CreateTextDialog(playerId, TEXTDIALOG_PHONE_01);
+                }
+            }else if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_TOWNHALL_BUSINESS) < 1f)
+            {
+                CreateTextDialog(playerId, TEXTDIALOG_CREATE_BIZ);
             }
         }
     }
@@ -873,6 +1072,128 @@ public class Roleplay : Gamemode
                         SetNPCDestination(npcId, GetPlayerPos(playerId));
                     }
                     break;
+                case "t":
+                case "telephone":
+                    if(string.IsNullOrEmpty(characters[playerId].phone))
+                    {
+                        if (players[playerId].ContainsKey("incomingCall"))
+                        {
+                            uint incomingPlayerId = uint.Parse(players[playerId]["incomingCall"]);
+                            if (IsValidPlayer(incomingPlayerId))
+                            {
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Vous raccrochez.");
+                                GamemodesManager.instance.StopCoroutine(Call(incomingPlayerId, playerId));
+                                SendClientMessage(incomingPlayerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La personne que vous tentez de joindre n'est pas disponible pour le moment.");
+                                players[playerId].Remove("incomingCall");
+
+                                if (players[incomingPlayerId].ContainsKey("currentCall"))
+                                    players[incomingPlayerId].Remove("currentCall");
+                            }
+                        }
+                        else if (players[playerId].ContainsKey("currentCall"))
+                        {
+                            uint callPlayerId = uint.Parse(players[playerId]["currentCall"]);
+                            SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Vous raccrochez.");
+                            players[playerId].Remove("currentCall");
+
+                            if (IsValidPlayer(callPlayerId))
+                            {
+                                if (players[callPlayerId].ContainsKey("currentCall"))
+                                {
+                                    players[callPlayerId].Remove("currentCall");
+                                    SendClientMessage(callPlayerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La personne raccroche.");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            SendClientMessage(playerId, "#ffffff", "<color=red>Vous n'avez pas de téléphone !</color>");
+                        }
+                    }
+                    else
+                    {
+                        if (args[1] == "dec" || args[1] == "decrocher")
+                        {
+                            if (players[playerId].ContainsKey("incomingCall"))
+                            {
+                                uint incomingPlayerId = uint.Parse(players[playerId]["incomingCall"]);
+                                if (IsValidPlayer(incomingPlayerId))
+                                {
+                                    SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Vous décrochez.");
+                                    SendClientMessage(incomingPlayerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La personne décroche.");
+                                    players[playerId].Remove("incomingCall");
+                                    players[playerId].Add("currentCall", incomingPlayerId.ToString());
+                                }
+                            }
+                            else
+                            {
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Pas d'appel entrant");
+                            }
+                        }
+                        else if (args[1] == "rac" || args[1] == "raccrocher")
+                        {
+                            if (players[playerId].ContainsKey("incomingCall"))
+                            {
+                                uint incomingPlayerId = uint.Parse(players[playerId]["incomingCall"]);
+                                if (IsValidPlayer(incomingPlayerId))
+                                {
+                                    SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Vous raccrochez.");
+                                    GamemodesManager.instance.StopCoroutine(Call(incomingPlayerId, playerId));
+                                    SendClientMessage(incomingPlayerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La personne que vous tentez de joindre n'est pas disponible pour le moment.");
+                                    players[playerId].Remove("incomingCall");
+
+                                    if (players[incomingPlayerId].ContainsKey("currentCall"))
+                                        players[incomingPlayerId].Remove("currentCall");
+                                }
+                            }
+                            else if (players[playerId].ContainsKey("currentCall"))
+                            {
+                                uint callPlayerId = uint.Parse(players[playerId]["currentCall"]);
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Vous raccrochez.");
+                                players[playerId].Remove("currentCall");
+
+                                if (IsValidPlayer(callPlayerId))
+                                {
+                                    if (players[callPlayerId].ContainsKey("currentCall"))
+                                    {
+                                        players[callPlayerId].Remove("currentCall");
+                                        SendClientMessage(callPlayerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La personne raccroche.");
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Pas d'appel entrant");
+                            }
+                        }
+                        else if (args[1] == "appeler")
+                        {
+                            SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Appel en cours...");
+                            string phone = args[2];
+                            uint recipientId = Utils.GetPlayerIdFromPhone(phone);
+                            if (recipientId != 0)
+                            {
+                                if (players[recipientId].ContainsKey("currentCall") || players[recipientId].ContainsKey("incomingCall"))
+                                {
+                                    SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> La ligne est occupée.");
+                                }
+                                else
+                                {
+                                    // TODO Freeze player
+                                    players[playerId].Add("currentCall", recipientId.ToString());
+                                    players[recipientId].Add("incomingCall", playerId.ToString());
+                                    SendClientMessage(recipientId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Appel entrant du " + characters[playerId].phone + ". /t dec(rocher) pour prendre l'appel ou /t rac(crocher)");
+                                    Utils.SendDistanceMessage(GetPlayerPos(recipientId), "<color=#912091>** Le téléphone de " + Utils.GetRPName(recipientId) + " sonne **</color>", 7.5f);
+                                    GamemodesManager.instance.StartCoroutine(Call(playerId, recipientId));
+                                }
+                            }
+                            else
+                            {
+                                SendClientMessage(playerId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> Le numéro que vous avez composé n'est attribué ou n'est pas disponible.");
+                            }
+                        }
+                    }                    
+                    break;
                 default:
                     SendClientMessage(playerId, "#ffffff", "<color=red>Cette commande n'est pas dans notre base de données</color>");
                     break;
@@ -880,7 +1201,19 @@ public class Roleplay : Gamemode
         }
         else
         {
-            Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " (" + playerId + ") dit: " + message, 7.5f);
+            if(players[playerId].ContainsKey("currentCall"))
+            {
+                Utils.SendDistanceMessage(GetPlayerPos(playerId), "<color=orange>[TÉLÉPHONE] "+Utils.GetRPName(playerId) + " (" + playerId + ") dit: " + message, 7.5f);
+                uint callNetId = uint.Parse(players[playerId]["currentCall"]);
+                if(players[callNetId].ContainsKey("currentCall"))
+                {
+                    SendClientMessage(callNetId, "#ffffff", "<color=orange>[TÉLÉPHONE]</color> " + characters[playerId].phone + " : " + message);
+                }
+            }
+            else
+            {
+                Utils.SendDistanceMessage(GetPlayerPos(playerId), Utils.GetRPName(playerId) + " (" + playerId + ") dit: " + message, 7.5f);
+            }
         }
     }
 

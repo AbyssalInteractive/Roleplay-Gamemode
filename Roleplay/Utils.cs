@@ -197,6 +197,62 @@ public static class Utils
         }
     }
 
+    public static void BizsInit()
+    {
+        // Si le répertoire des entreprises n'existe pas on le créé
+        string path_bizs = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Bizs/";
+        if (!Directory.Exists(path_bizs))
+        {
+            Directory.CreateDirectory(path_bizs);
+        }
+
+        // On récupère tous les dossiers de chaque entreprise pour effectuer une itération
+        string[] path_directories = Directory.GetDirectories(path_bizs);
+
+        // On charge toutes les entreprises à partir du répertoire que l'on a créé auparavant
+        for (int i = 0; i < path_directories.Length; i++)
+        {
+            if (File.Exists(path_directories[i] + "business.json"))
+            {
+                string bizStr = File.ReadAllText(path_directories[i] + "business.json");
+                Business biz = JsonUtility.FromJson<Business>(bizStr);
+
+                gamemode.bizs.Add(biz.name, biz);
+            }
+        }
+    }
+
+    public static bool CreateBiz(string bizName, uint playerId)
+    {
+        string path_bizs = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Bizs/";
+
+        if (gamemode.bizs.ContainsKey(bizName))
+        {
+            return false;
+        }else
+        {
+            if(string.IsNullOrEmpty(gamemode.characters[playerId].bizName))
+            {
+                DirectoryInfo directory = Directory.CreateDirectory(path_bizs + bizName);
+                Business biz = new Business();
+                biz.name = bizName;
+                biz.ownerNames = GetRPName(playerId).Replace(char.Parse(" "), char.Parse("§"));
+                File.WriteAllText(directory.FullName + "/business.json", JsonUtility.ToJson(biz));
+
+                RPCharacter rpCharacter = gamemode.characters[playerId];
+                rpCharacter.bizName = bizName;
+                gamemode.characters[playerId] = rpCharacter;
+
+                gamemode.bizs.Add(bizName, biz);
+
+                return true;
+            }else
+            {
+                return false;
+            }
+        }
+    }
+
     public static uint GetPlayerIdFromPhone(string phone)
     {
         foreach(KeyValuePair<uint, RPCharacter> entry in gamemode.characters)
