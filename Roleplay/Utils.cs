@@ -216,7 +216,7 @@ public static class Utils
             {
                 string bizStr = File.ReadAllText(path_directories[i] + "business.json");
                 Business biz = JsonUtility.FromJson<Business>(bizStr);
-
+                Debug.LogError(biz);
                 gamemode.bizs.Add(biz.name, biz);
             }
         }

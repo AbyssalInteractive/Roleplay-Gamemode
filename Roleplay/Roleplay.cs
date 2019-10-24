@@ -249,6 +249,27 @@ public class Roleplay : Gamemode
         type = 0
     };
 
+    TextDialogJson TEXTDIALOG_BIZ_MANANGEMENT = new TextDialogJson
+    {
+        id = 25,
+        textContent = "",
+        button1 = "Sélectionner",
+        button2 = "Fermer",
+        listItems = new string[5] { "Statistiques de votre entreprise", "Gestion des membres", "Gestion des terrains", "Gestion des stocks", "Changer de propriétaire" },
+        title = "Votre entreprise - ",
+        type = 2
+    };
+
+    TextDialogJson TEXTDIALOG_BIZ_STATS = new TextDialogJson
+    {
+        id = 26,
+        textContent = "",
+        button1 = "Retour",
+        button2 = "Fermer",
+        title = "Votre entreprise - ",
+        type = 0
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
     int TEXTLABEL_MARKET_01;
@@ -285,7 +306,6 @@ public class Roleplay : Gamemode
         Utils.LoadPhones();
 
         CreateTextDraws();
-
     }
 
     public override void OnPlayerCommand(uint playerId, string command)
@@ -347,6 +367,40 @@ public class Roleplay : Gamemode
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
     {
         base.OnTextDialogResponse(playerId, response);
+
+        if(response.id == TEXTDIALOG_BIZ_STATS.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                DestroyTextDialog(playerId, response.id);
+                TextDialogJson ent = TEXTDIALOG_BIZ_MANANGEMENT;
+                ent.title = "Gestion entreprise - " + characters[playerId].bizName;
+                CreateTextDialog(playerId, ent);
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_BIZ_MANANGEMENT.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                switch(response.selectedLine)
+                {
+                    case 0:
+                        DestroyTextDialog(playerId, response.id);
+                        TextDialogJson ent = TEXTDIALOG_BIZ_STATS;
+                        Business biz = bizs[characters[playerId].bizName];
+                        ent.textContent = "<color=orange>"+ biz.name +"</color> \n Fonds : <color=orange>"+ biz.money +"€</color> \n Employés : <color=orange>"+ biz.employees.Length +"</color>";
+                        CreateTextDialog(playerId, ent);
+                        break;
+                }
+            }else
+            {
+                DestroyTextDialog(playerId, response.id);
+            }
+        } 
 
         if(response.id == TEXTDIALOG_CREATE_BIZ_VALIDATE.id)
         {
@@ -908,6 +962,18 @@ public class Roleplay : Gamemode
 
             switch (args[0])
             {
+                case "spawnveh":
+                    if (GetAccount(players[playerId]["steamId"]).adminLevel > 1)
+                    {
+                        CreateVehicle(int.Parse(args[1]), (GetPlayerPos(playerId) + Vector3.up * 2), Vector3.zero);
+                    }
+                    break;
+                case "e":
+                case "entreprise":
+                    TextDialogJson ent = TEXTDIALOG_BIZ_MANANGEMENT;
+                    ent.title = "Gestion entreprise - " + characters[playerId].bizName;
+                    CreateTextDialog(playerId, ent);
+                    break;
                 case "activités":
                     CreateTextDialog(playerId, TEXTDIALOG_ACTIVITES);
                     break;
@@ -1203,7 +1269,7 @@ public class Roleplay : Gamemode
         {
             if(players[playerId].ContainsKey("currentCall"))
             {
-                Utils.SendDistanceMessage(GetPlayerPos(playerId), "<color=orange>[TÉLÉPHONE] "+Utils.GetRPName(playerId) + " (" + playerId + ") dit: " + message, 7.5f);
+                Utils.SendDistanceMessage(GetPlayerPos(playerId), "<color=orange>[TÉLÉPHONE] </color>"+Utils.GetRPName(playerId) + " (" + playerId + ") dit: " + message, 7.5f);
                 uint callNetId = uint.Parse(players[playerId]["currentCall"]);
                 if(players[callNetId].ContainsKey("currentCall"))
                 {

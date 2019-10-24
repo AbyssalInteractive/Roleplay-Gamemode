@@ -1,4 +1,5 @@
-﻿public struct Business
+﻿[System.Serializable]
+public struct Business
 {
     public string name;
     public string ownerNames; // Ex: John§Henkton
