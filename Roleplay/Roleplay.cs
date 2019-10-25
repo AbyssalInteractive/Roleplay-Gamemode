@@ -11,7 +11,7 @@ public class Roleplay : Gamemode
     TextDialogJson TEXTDIALOG_LOGIN = new TextDialogJson
     {
         id = 1,
-        textContent = "Merci de bien vouloir vous connecter :",
+        textContent = "Entrez votre mot de passe :",
         button1 = "Connexion",
         button2 = "Annuler",
         title = "Connexion à votre compte",
@@ -30,7 +30,7 @@ public class Roleplay : Gamemode
     TextDialogJson TEXTDIALOG_REGISTER = new TextDialogJson
     {
         id = 3,
-        textContent = "Vous n'avez pas encore de compte, veuillez en créer un nouveau :",
+        textContent = "Vous n'avez pas encore de compte, entrez un nouveau mot de passe :",
         button1 = "Créer",
         button2 = "Annuler",
         title = "Création de votre compte",
@@ -270,6 +270,36 @@ public class Roleplay : Gamemode
         type = 0
     };
 
+    TextDialogJson TEXTDIALOG_CREATECHARACTER_01 = new TextDialogJson
+    {
+        id = 27,
+        textContent = "Entrez le prénom de votre personnage:",
+        button1 = "Suivant",
+        button2 = "Retour",
+        title = "Création d'un nouveau personnage 1/2",
+        type = 1
+    };
+
+    TextDialogJson TEXTDIALOG_CREATECHARACTER_02 = new TextDialogJson
+    {
+        id = 28,
+        textContent = "Entrez le nom de votre personnage:",
+        button1 = "Créer",
+        button2 = "Retour",
+        title = "Création d'un nouveau personnage 2/2",
+        type = 1
+    };
+
+    TextDialogJson TEXTDIALOG_LISTCHARACTER = new TextDialogJson
+    {
+        id = 29,
+        button1 = "Choisir",
+        button2 = "Créer nouveau",
+        button3 = "Quitter",
+        title = "Liste de vos personnages",
+        type = 2
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
     int TEXTLABEL_MARKET_01;
@@ -299,6 +329,7 @@ public class Roleplay : Gamemode
     {
         base.OnGamemodeInit();
         Utils.gamemode = this;
+        Utils.InitCharacter();
         TextLabels();
         Utils.BizsInit();
         Utils.AccountsInit();
@@ -313,11 +344,11 @@ public class Roleplay : Gamemode
         base.OnPlayerCommand(playerId, command);
     }
 
-    public override void OnPlayerConnect(uint playerId, string steamId)
+    public override void OnPlayerConnect(uint playerId, string steamId, string steamUsername)
     {
-        base.OnPlayerConnect(playerId, steamId);
+        base.OnPlayerConnect(playerId, steamId, steamUsername);
         // On affiche globalement quel joueur steam s'est connecté
-        SendBroadcastMessage("#ffffff", GetSteamUsernameBySteamId(steamId) + " s'est connecté au serveur !");
+        SendBroadcastMessage("#ffffff", steamUsername + " s'est connecté au serveur !");
         RegisterOrLogin(playerId, steamId);
     }
 
@@ -350,9 +381,9 @@ public class Roleplay : Gamemode
     {
         DestroyTextDialog(playerId, TEXTDIALOG_REGISTER.id);
         SendClientMessage(playerId, "#ffffff", "Vous pouvez désormais vous créer un personnage !");
-        ShowCharacterCreation(playerId);
 
         // TODO create own character creation
+        CreateTextDialog(playerId, TEXTDIALOG_CREATECHARACTER_01);
     }
 
     public IEnumerator Call(uint playerId, uint recipientId)
@@ -366,9 +397,130 @@ public class Roleplay : Gamemode
         }
     }
 
+    void OnCharacterCreated(RPCharacter character, uint playerId)
+    {
+
+    }
+
+    void OnPlayerSpawn(uint playerId, RPCharacter rpCharacter)
+    {
+        SetPlayerPos(playerId, new Vector3(810.689f, 165.858f, 1038.846f));
+        characters.Add(playerId, rpCharacter);
+        CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
+
+        // Create player UI
+        PlayerText playerUI = new PlayerText();
+        playerUI.alignment = 7;
+        playerUI.textAlignment = 6;
+        playerUI.position = new Vector2(305.7f, 120.7f);
+        playerUI.size = new Vector2(581.5f, 191.4f);
+        playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
+        players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
+        // End player UI
+
+        SetPlayerUpText(playerId, Utils.GetRPName(playerId) + " (" + playerId + ")");
+
+        if (players[playerId].ContainsKey("isFirstConnect"))
+        {
+            SendClientMessage(playerId, "#ffffff", "<color=orange>Bienvenue sur Riverside Rôleplay</color>");
+            SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/guide</color> si vous avez besoin d'aide");
+            SendClientMessage(playerId, "#ffffff", "En cas de besoin utilisez le salon <color=#ebcf60>/n(ouveau)</color>");
+            SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/aiderp</color> si vous ne connaissez pas le RP");
+        }
+    }
+
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
     {
         base.OnTextDialogResponse(playerId, response);
+
+        if(response.id == TEXTDIALOG_LISTCHARACTER.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                List<RPCharacter> _characters = Utils.GetCharacterOfPlayer(playerId);
+                int selectedCharacter = response.selectedLine;
+
+                if(selectedCharacter > _characters.Count - 1)
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Une erreur est survenue, merci de réessayer</color>");
+                }else
+                {
+                    SetRPCharacter(playerId, JsonUtility.ToJson(_characters[selectedCharacter]));
+                    DestroyTextDialog(playerId, response.id);
+                    OnPlayerSpawn(playerId, _characters[selectedCharacter]);
+                }
+                
+
+            }else if(response.selectedButton == 2)
+            {
+                DestroyTextDialog(playerId, response.id);
+                CreateTextDialog(playerId, TEXTDIALOG_CREATECHARACTER_01);
+            }else {
+                SendClientMessage(playerId, "#ffffff", "Vous avez été expulsé du serveur.");
+                Kick(playerId);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_CREATECHARACTER_01.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                string firstname = response.input.Replace(" ", "");
+                if (firstname.Length > 2)
+                {
+                    players[playerId].Add("firstname", firstname);
+                    DestroyTextDialog(playerId, response.id);
+                    CreateTextDialog(playerId, TEXTDIALOG_CREATECHARACTER_02);
+                }
+                else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Merci de saisir un prénom de plus de deux caractères !</color>");
+                }
+            }
+            else
+            {
+                DestroyTextDialog(playerId, response.id);
+                CreateTextDialog(playerId, TEXTDIALOG_LISTCHARACTER);
+            }            
+        }
+
+        if(response.id == TEXTDIALOG_CREATECHARACTER_02.id)
+        {
+            if (response.selectedButton == 1)
+            {
+                string lastname = response.input.Replace(" ", "");
+                if (lastname.Length > 2)
+                {
+                    players[playerId].Add("lastname", lastname);
+                    DestroyTextDialog(playerId, response.id);
+                    RPCharacter character = new RPCharacter();
+                    character.health = 100;
+                    character.money = 1500;
+                    character.firstname = players[playerId]["firstname"];
+                    character.lastname = players[playerId]["lastname"];
+                    Utils.CreateCharacter(character, playerId);
+                    TextDialogJson list = TEXTDIALOG_LISTCHARACTER;
+                    List<string> characters = new List<string>();
+                    List<RPCharacter> rpCharacters = Utils.GetCharacterOfPlayer(playerId);
+                    for (int i = 0; i < rpCharacters.Count; i++)
+                    {
+                        characters.Add(rpCharacters[i].firstname + " " + rpCharacters[i].lastname);
+                    }
+                    string[] charactersArr = characters.ToArray();
+                    list.listItems = charactersArr;
+                    CreateTextDialog(playerId, list);
+                }
+                else
+                {
+                    SendClientMessage(playerId, "#ffffff", "<color=red>Merci de saisir un nom de plus de deux caractères !</color>");
+                }
+            }
+            else
+            {
+                DestroyTextDialog(playerId, response.id);
+                CreateTextDialog(playerId, TEXTDIALOG_CREATECHARACTER_01);
+            }
+        }
 
         if(response.id == TEXTDIALOG_BIZ_STATS.id)
         {
@@ -699,7 +851,16 @@ public class Roleplay : Gamemode
                 {
                     DestroyTextDialog(playerId, TEXTDIALOG_LOGIN.id);
                     SendClientMessage(playerId, "#ffffff", "<color=cyan>[SERVEUR] </color>Vous vous êtes connecté avec succès !");
-                    ShowCharacterCreation(playerId);
+                    TextDialogJson list = TEXTDIALOG_LISTCHARACTER;
+                    List<string> characters = new List<string>();
+                    List<RPCharacter> rpCharacters = Utils.GetCharacterOfPlayer(playerId);
+                    for (int i = 0; i < rpCharacters.Count; i++)
+                    {
+                        characters.Add(rpCharacters[i].firstname + " " + rpCharacters[i].lastname);
+                    }
+                    string[] charactersArr = characters.ToArray();
+                    list.listItems = charactersArr;
+                    CreateTextDialog(playerId, list);
                 }
                 else
                 {
@@ -1297,35 +1458,6 @@ public class Roleplay : Gamemode
         else
         {
             return new Account();
-        }
-    }
-
-    public override void OnPlayerSpawn(uint playerId)
-    {
-        base.OnPlayerSpawn(playerId);
-        RPCharacter rpCharacter = new RPCharacter();
-        rpCharacter = Utils.GetRPCharacterFromFile(playerId);
-        characters.Add(playerId, rpCharacter);
-        CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
-
-        // Create player UI
-        PlayerText playerUI = new PlayerText();
-        playerUI.alignment = 7;
-        playerUI.textAlignment = 6;
-        playerUI.position = new Vector2(305.7f, 120.7f);
-        playerUI.size = new Vector2(581.5f, 191.4f);
-        playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
-        players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
-        // End player UI
-
-        SetPlayerUpText(playerId, Utils.GetRPName(playerId) + " (" + playerId + ")");
-
-        if (players[playerId].ContainsKey("isFirstConnect"))
-        {
-            SendClientMessage(playerId, "#ffffff", "<color=orange>Bienvenue sur Riverside Rôleplay</color>");
-            SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/guide</color> si vous avez besoin d'aide");
-            SendClientMessage(playerId, "#ffffff", "En cas de besoin utilisez le salon <color=#ebcf60>/n(ouveau)</color>");
-            SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/aiderp</color> si vous ne connaissez pas le RP");
         }
     }
 

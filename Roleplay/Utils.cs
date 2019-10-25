@@ -77,6 +77,45 @@ public static class Utils
         }
     }
 
+    public static void InitCharacter()
+    {
+        string path_characters = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/";
+
+        if (!Directory.Exists(path_characters))
+        {
+            Directory.CreateDirectory(path_characters);
+        }
+    }
+
+    public static bool CreateCharacter(RPCharacter character, uint playerId)
+    {
+        string path_characters = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/";
+
+        if (!File.Exists(path_characters + "*-" + character.firstname + " " + character.lastname + ".json"))
+        {
+            File.WriteAllText(path_characters + gamemode.players[playerId]["steamId"] + "-" + character.firstname + "-" + character.lastname + ".json", JsonUtility.ToJson(character));
+            return true;
+        } else
+        {
+            return false;
+        }
+    }
+
+    public static List<RPCharacter> GetCharacterOfPlayer (uint playerId) {
+        List<RPCharacter> rpCharacters = new List<RPCharacter>();
+        string path_characters = Application.dataPath + "/../Servers/" + gamemode.serverName + "/Characters/";
+
+        string[] files = Directory.GetFiles(path_characters, gamemode.players[playerId]["steamId"] + "-*.json");
+        for(int i = 0; i < files.Length; i++)
+        {
+            string fileStr = File.ReadAllText(files[i]);
+            RPCharacter fileRPCharacter = JsonUtility.FromJson<RPCharacter>(fileStr);
+            rpCharacters.Add(fileRPCharacter);
+        }
+        return rpCharacters;
+    }
+
+
     public static RPCharacter GetRPCharacter(uint playerId)
     {
         if(gamemode.IsValidPlayer(playerId))
