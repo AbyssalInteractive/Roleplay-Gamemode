@@ -1,14 +1,6 @@
 ﻿public struct RPCharacter
 {
-    public string firstname;
-    public string lastname;
-    public int jobId;
-    public string bizGuid;
-    public float money;
-    public float bank;
-    public bool licenseB;
     public float health;
-
     public int sexId;
     public int hairId;
     public int eyesId;
@@ -20,10 +12,15 @@
 
     // own infos
 
+    public string firstname;
+    public string lastname;
+    public float money;
+    public float bank;
     public bool isNewbieChatMuted;
     public int timeSpentOnServer;
     public int timeSpentOnServerSinceLogin;
     public bool gps;
+    public bool licenseB;
     public string phone;
     public string bizName;
 }

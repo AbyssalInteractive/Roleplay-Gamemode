@@ -351,6 +351,8 @@ public class Roleplay : Gamemode
         DestroyTextDialog(playerId, TEXTDIALOG_REGISTER.id);
         SendClientMessage(playerId, "#ffffff", "Vous pouvez désormais vous créer un personnage !");
         ShowCharacterCreation(playerId);
+
+        // TODO create own character creation
     }
 
     public IEnumerator Call(uint playerId, uint recipientId)
