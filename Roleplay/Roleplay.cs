@@ -406,8 +406,7 @@ public class Roleplay : Gamemode
     {
         SetPlayerPos(playerId, new Vector3(810.689f, 165.858f, 1038.846f));
         characters.Add(playerId, rpCharacter);
-        CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
-
+       
         // Create player UI
         PlayerText playerUI = new PlayerText();
         playerUI.alignment = 7;
@@ -427,6 +426,7 @@ public class Roleplay : Gamemode
             SendClientMessage(playerId, "#ffffff", "En cas de besoin utilisez le salon <color=#ebcf60>/n(ouveau)</color>");
             SendClientMessage(playerId, "#ffffff", "Utilisez <color=#ebcf60>/aiderp</color> si vous ne connaissez pas le RP");
         }
+        CreateTextDialog(playerId, TEXTDIALOG_WELCOME);
     }
 
     public override void OnTextDialogResponse(uint playerId, DialogResponse response)
@@ -445,8 +445,8 @@ public class Roleplay : Gamemode
                     SendClientMessage(playerId, "#ffffff", "<color=red>Une erreur est survenue, merci de réessayer</color>");
                 }else
                 {
-                    SetRPCharacter(playerId, JsonUtility.ToJson(_characters[selectedCharacter]));
                     DestroyTextDialog(playerId, response.id);
+                    SetRPCharacter(playerId, JsonUtility.ToJson(_characters[selectedCharacter]));
                     OnPlayerSpawn(playerId, _characters[selectedCharacter]);
                 }
                 
@@ -1125,6 +1125,9 @@ public class Roleplay : Gamemode
 
             switch (args[0])
             {
+                case "spawn":
+                    SetPlayerPos(playerId, new Vector3(832.7f, 167f, 1067.1f));
+                    break;
                 case "spawnveh":
                     if (GetAccount(players[playerId]["steamId"]).adminLevel > 1)
                     {
@@ -1170,8 +1173,8 @@ public class Roleplay : Gamemode
                     {
                         RPCharacter rpCharacter = characters[playerId];
                         rpCharacter.health = 100;
-                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
                         SetPlayerPos(playerId, new Vector3(880, 165, 1219));
+                        SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
                     }
                     break;
                 case "takedamage":
@@ -1470,7 +1473,7 @@ public class Roleplay : Gamemode
     {
         base.OnRPCharacterUpdate(playerId, _rpCharacter);
         string playerTextID;
-        RPCharacter rpCharacter = JsonUtility.FromJson<RPCharacter>(_rpCharacter);
+        RPCharacter rpCharacter = characters[playerId];
         if (players[playerId].TryGetValue("playerUI", out playerTextID))
         {
             PlayerText playerUI = new PlayerText();
