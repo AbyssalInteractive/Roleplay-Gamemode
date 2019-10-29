@@ -339,11 +339,6 @@ public class Roleplay : Gamemode
         CreateTextDraws();
     }
 
-    public override void OnPlayerCommand(uint playerId, string command)
-    {
-        base.OnPlayerCommand(playerId, command);
-    }
-
     public override void OnPlayerConnect(uint playerId, string steamId, string steamUsername)
     {
         base.OnPlayerConnect(playerId, steamId, steamUsername);
@@ -395,11 +390,6 @@ public class Roleplay : Gamemode
             Utils.SendDistanceMessage(GetPlayerPos(playerId), "<color=#912091> " + Utils.GetRPName(playerId) + " range son téléphone</color>", 7.5f);
             players[recipientId].Remove("incomingCall");
         }
-    }
-
-    void OnCharacterCreated(RPCharacter character, uint playerId)
-    {
-
     }
 
     void OnPlayerSpawn(uint playerId, RPCharacter rpCharacter)
@@ -1463,12 +1453,6 @@ public class Roleplay : Gamemode
             return new Account();
         }
     }
-
-    public override void OnPlayerUpdate(uint playerId)
-    {
-        base.OnPlayerUpdate(playerId);
-    }
-
     public override void OnRPCharacterUpdate(uint playerId, string _rpCharacter)
     {
         base.OnRPCharacterUpdate(playerId, _rpCharacter);
