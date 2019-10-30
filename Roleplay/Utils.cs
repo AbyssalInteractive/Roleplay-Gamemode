@@ -226,10 +226,17 @@ public static class Utils
         // On charge tous les métiers à partir du répertoire que l'on a créé auparavant
         for (int i = 0; i < jobs_directories.Length; i++)
         {
-            if (File.Exists(jobs_directories[i] + "config.json"))
+            if (File.Exists(jobs_directories[i] + "/config.json"))
             {
-                string jobStr = File.ReadAllText(jobs_directories[i] + "config.json");
+                string jobStr = File.ReadAllText(jobs_directories[i] + "/config.json");
                 Job job = JsonUtility.FromJson<Job>(jobStr);
+
+                gamemode.jobs.Add(job.jobId, job);
+            }else
+            {
+                Job job = new Job();
+                job.jobName = Path.GetFileName(Path.GetDirectoryName(jobs_directories[i] + "/"));
+                File.WriteAllText(jobs_directories[i] + "/config.json", JsonUtility.ToJson(job));
 
                 gamemode.jobs.Add(job.jobId, job);
             }
@@ -251,11 +258,10 @@ public static class Utils
         // On charge toutes les entreprises à partir du répertoire que l'on a créé auparavant
         for (int i = 0; i < path_directories.Length; i++)
         {
-            if (File.Exists(path_directories[i] + "business.json"))
+            if (File.Exists(path_directories[i] + "/business.json"))
             {
-                string bizStr = File.ReadAllText(path_directories[i] + "business.json");
+                string bizStr = File.ReadAllText(path_directories[i] + "/business.json");
                 Business biz = JsonUtility.FromJson<Business>(bizStr);
-                Debug.LogError(biz);
                 gamemode.bizs.Add(biz.name, biz);
             }
         }
