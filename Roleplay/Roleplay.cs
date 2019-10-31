@@ -329,7 +329,7 @@ public class Roleplay : Gamemode
     {
         base.OnGamemodeInit();
         // On charge les définitions de nos items personnalisés
-        LoadItemDefinitions(File.ReadAllText(Application.dataPath + "/../Servers" + serverName + "/Items/items.json"));
+        //LoadItemDefinitions(File.ReadAllText(Application.dataPath + "/../Servers" + serverName + "/Items/items.json"));
 
         Utils.gamemode = this;
         Utils.InitCharacter();

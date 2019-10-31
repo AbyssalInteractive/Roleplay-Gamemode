@@ -36,7 +36,7 @@
     </Reference>
     <Reference Include="Nova-Life.Gamemode, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Documents\Nova-Life Low Poly Edition\Temp\bin\Debug\Nova-Life.Gamemode.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Nova-Life\Nova-Life_Data\Managed\Nova-Life.Gamemode.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
