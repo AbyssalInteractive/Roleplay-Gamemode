@@ -8,6 +8,8 @@ using Mirror;
 public static class Utils
 {
     public static Roleplay gamemode;
+    public static TCPServer server;
+
 
     public static void AccountsInit()
     {
@@ -17,6 +19,12 @@ public static class Utils
         {
             Directory.CreateDirectory(path_accounts);
         }
+    }
+
+    public static void TCPServerInit()
+    {
+        GameObject tcpServer = new GameObject("TCPServer");
+        tcpServer.AddComponent<TCPServer>();
     }
 
     public static string CreateMD5(string input)
@@ -231,6 +239,8 @@ public static class Utils
                 string jobStr = File.ReadAllText(jobs_directories[i] + "/config.json");
                 Job job = JsonUtility.FromJson<Job>(jobStr);
 
+                Debug.LogError(job.jobName);
+
                 gamemode.jobs.Add(job.jobId, job);
             }else
             {
@@ -240,6 +250,19 @@ public static class Utils
 
                 gamemode.jobs.Add(job.jobId, job);
             }
+        }
+    }
+
+    public static Job GetJobById(int jobId)
+    {
+        if(jobId == 0)
+        {
+            Job sansemploi = new Job();
+            sansemploi.jobName = "Sans emploi";
+
+            return sansemploi;
+        }else {
+            return gamemode.jobs[jobId];
         }
     }
 
@@ -323,5 +346,12 @@ public static class Utils
             rpCharacter.phone = phone;
             gamemode.characters[playerId] = rpCharacter;
         }
+    }
+
+    public static void SetJob(uint playerId, int jobId)
+    {
+        RPCharacter rpCharacter = gamemode.characters[playerId];
+        rpCharacter.jobId = jobId;
+        gamemode.characters[playerId] = rpCharacter;
     }
 }

@@ -1,14 +1,7 @@
 ﻿public struct RPCharacter
 {
     public float health;
-    public int sexId;
-    public int hairId;
-    public int eyesId;
-    public int tshirtId;
-    public int vestId;
-    public int glovesId;
-    public int pantsId;
-    public int shoesId;
+    public int skinId;
 
     // own infos
 
@@ -23,4 +16,5 @@
     public bool licenseB;
     public string phone;
     public string bizName;
+    public int jobId;
 }

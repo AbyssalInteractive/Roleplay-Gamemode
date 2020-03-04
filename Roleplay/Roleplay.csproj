@@ -36,10 +36,11 @@
     </Reference>
     <Reference Include="Nova-Life.Gamemode, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Nova-Life\Nova-Life_Data\Managed\Nova-Life.Gamemode.dll</HintPath>
+      <HintPath>..\..\..\..\..\Documents\Nova-Life LPE\Temp\bin\Debug\Nova-Life.Gamemode.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -64,6 +65,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Structs\Opinion.cs" />
     <Compile Include="Structs\RPCharacter.cs" />
+    <Compile Include="TCPServer.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

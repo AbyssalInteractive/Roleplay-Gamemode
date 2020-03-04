@@ -300,6 +300,17 @@ public class Roleplay : Gamemode
         type = 2
     };
 
+    TextDialogJson TEXTDIALOG_LISTEJOBS = new TextDialogJson
+    {
+        id = 30,
+        textContent = "",
+        button1 = "Sélectionner",
+        button2 = "Fermer",
+        listItems = new string[5] { "Chauffeur de bus", "Médecin", "Éboueur", "Policier", "Livreur" },
+        title = "Liste des métiers disponibles",
+        type = 2
+    };
+
     int TEXTLABEL_BUYCAR_01;
     int TEXTLABEL_ATM;
     int TEXTLABEL_MARKET_01;
@@ -333,6 +344,7 @@ public class Roleplay : Gamemode
 
         Utils.gamemode = this;
         Utils.InitCharacter();
+        Utils.TCPServerInit();
         TextLabels();
         Utils.BizsInit();
         Utils.AccountsInit();
@@ -397,7 +409,7 @@ public class Roleplay : Gamemode
 
     void OnPlayerSpawn(uint playerId, RPCharacter rpCharacter)
     {
-        SetPlayerPos(playerId, new Vector3(810.689f, 165.858f, 1038.846f));
+        SetPlayerPos(playerId, new Vector3(702.62f, 50.3f, 943));
         characters.Add(playerId, rpCharacter);
        
         // Create player UI
@@ -406,7 +418,7 @@ public class Roleplay : Gamemode
         playerUI.textAlignment = 6;
         playerUI.position = new Vector2(305.7f, 120.7f);
         playerUI.size = new Vector2(581.5f, 191.4f);
-        playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
+        playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + rpCharacter.money + "€</color> \n" + "Métier: " + Utils.GetJobById(rpCharacter.jobId).jobName;
         players[playerId].Add("playerUI", PlayerTextDrawCreate(playerId, playerUI).ToString());
         // End player UI
 
@@ -451,6 +463,43 @@ public class Roleplay : Gamemode
             }else {
                 SendClientMessage(playerId, "#ffffff", "Vous avez été expulsé du serveur.");
                 Kick(playerId);
+            }
+        }
+
+        if(response.id == TEXTDIALOG_LISTEJOBS.id)
+        {
+            if(response.selectedButton == 1)
+            {
+                if(response.selectedLine == 0)
+                {
+                    DestroyTextDialog(playerId, response.id);
+                    SendClientMessage(playerId, "#ffffff", "<color=green>[MÉTIER] Vous avez rejoint le métier Chauffeur de bus avec succès !</color>");
+                    Utils.SetJob(playerId, 1);
+                }
+                else if(response.selectedLine == 1)
+                {
+                    DestroyTextDialog(playerId, response.id);
+
+                }
+                else if (response.selectedLine == 2)
+                {
+                    DestroyTextDialog(playerId, response.id);
+
+                }
+                else if (response.selectedLine == 3)
+                {
+                    DestroyTextDialog(playerId, response.id);
+
+                }
+                else if (response.selectedLine == 4)
+                {
+                    DestroyTextDialog(playerId, response.id);
+
+                }
+            }
+            else
+            {
+                DestroyTextDialog(playerId, response.id);
             }
         }
 
@@ -1038,6 +1087,7 @@ public class Roleplay : Gamemode
     {
         Utils.SaveRPCharacter(playerId);
         characters.Remove(playerId);
+        SendBroadcastMessage("#ffffff", players[playerId]["steamUsername"] + " s'est déconnecté du serveur !");
         base.OnPlayerDisconnect(playerId);
     }
 
@@ -1091,6 +1141,10 @@ public class Roleplay : Gamemode
             {
                 CreateTextDialog(playerId, TEXTDIALOG_BUS_SERVICE);
             }
+            else if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_TOWNHALL_JOBS) < 2f)
+            {
+                CreateTextDialog(playerId, TEXTDIALOG_LISTEJOBS);
+            }
             else if (GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_PHONE) < 2f)
             {
                 if(players[playerId].ContainsKey("currentCall"))
@@ -1103,6 +1157,16 @@ public class Roleplay : Gamemode
             }else if(GetDistance3DTextLabelFromPlayer(playerId, TEXTLABEL_TOWNHALL_BUSINESS) < 1f)
             {
                 CreateTextDialog(playerId, TEXTDIALOG_CREATE_BIZ);
+            }
+        }else if(key == KeyCode.I)
+        {
+            if(IsPlayerInAnyVehicle(playerId))
+            {
+                if(GetPlayerSeatID(playerId) == 0)
+                {
+                    uint vehicleId = GetPlayerVehicleID(playerId);
+                    ChangeMotorState(vehicleId, !GetMotorState(vehicleId));
+                }
             }
         }
     }
@@ -1119,7 +1183,7 @@ public class Roleplay : Gamemode
             switch (args[0])
             {
                 case "spawn":
-                    SetPlayerPos(playerId, new Vector3(832.7f, 167f, 1067.1f));
+                    SetPlayerPos(playerId, new Vector3(702, 50, 943));
                     break;
                 case "spawnveh":
                     if (GetAccount(players[playerId]["steamId"]).adminLevel > 1)
@@ -1166,14 +1230,9 @@ public class Roleplay : Gamemode
                     {
                         RPCharacter rpCharacter = characters[playerId];
                         rpCharacter.health = 100;
-                        SetPlayerPos(playerId, new Vector3(880, 165, 1219));
+                        SetPlayerPos(playerId, new Vector3(702, 50, 943));
                         SetRPCharacter(playerId, JsonUtility.ToJson(rpCharacter));
                     }
-                    break;
-                case "takedamage":
-                    RPCharacter _rpCharacter = characters[playerId];
-                    _rpCharacter.health -= 10;
-                    SetRPCharacter(playerId, JsonUtility.ToJson(_rpCharacter));
                     break;
                 case "fly":
                     if (GetAccount(players[playerId]["steamId"]).adminLevel > 1)
@@ -1245,41 +1304,29 @@ public class Roleplay : Gamemode
                 case "creerpnj":
                     if (args.Length == 8)
                     {
-                        int hairId = int.Parse(args[1]);
-                        int shoesId = int.Parse(args[2]);
-                        int tshirtId = int.Parse(args[3]);
-                        int vestId = int.Parse(args[4]);
-                        int pantsId = int.Parse(args[5]);
-                        int glovesId = int.Parse(args[6]);
-                        int backpackId = int.Parse(args[7]);
-                        uint npcId = CreateNPC(GetPlayerPos(playerId), GetPlayerRot(playerId), hairId, tshirtId, vestId, glovesId, pantsId, shoesId, backpackId);
+                        int skinId = int.Parse(args[1]);
+                        uint npcId = CreateNPC(GetPlayerPos(playerId), GetPlayerRot(playerId), skinId);
                         SendClientMessage(playerId, "#ffffff", "PNJ CRÉÉ : " + npcId);
                         SetNPCUpText(npcId, "Jinx (" + npcId + ")");
                     }
                     else
                     {
-                        SendClientMessage(playerId, "#ffffff", "USAGE: /creerpnj [HAIRID] [SHOESID] [TSHIRTID] [VESTID] [PANTSID] [GLOVESID] [BACKPACKID]");
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /creerpnj [SKINID]");
                     }
                     break;
                 case "modifierpnj":
                     if (args.Length == 10)
                     {
                         uint npcId = uint.Parse(args[1]);
-                        int hairId = int.Parse(args[2]);
-                        int shoesId = int.Parse(args[3]);
-                        int tshirtId = int.Parse(args[4]);
-                        int vestId = int.Parse(args[5]);
-                        int pantsId = int.Parse(args[6]);
-                        int glovesId = int.Parse(args[7]);
-                        int backpackId = int.Parse(args[8]);
-                        int keepPosition = int.Parse(args[9]);
+                        int skinId = int.Parse(args[2]);
+                        int keepPosition = int.Parse(args[3]);
                         if (keepPosition == 1)
                         {
-                            UpdateNPC(npcId, GetNPCPos(npcId), GetNPCRot(npcId), hairId, tshirtId, vestId, glovesId, pantsId, shoesId, backpackId);
+                            UpdateNPC(npcId, GetNPCPos(npcId), GetNPCRot(npcId), skinId);
                         }
                         else
                         {
-                            UpdateNPC(npcId, GetPlayerPos(playerId), GetPlayerRot(playerId), hairId, tshirtId, vestId, glovesId, pantsId, shoesId, backpackId);
+                            UpdateNPC(npcId, GetPlayerPos(playerId), GetPlayerRot(playerId), skinId);
                         }
 
                         SendClientMessage(playerId, "#ffffff", "PNJ MODIFIÉ : " + npcId);
@@ -1287,7 +1334,7 @@ public class Roleplay : Gamemode
                     }
                     else
                     {
-                        SendClientMessage(playerId, "#ffffff", "USAGE: /modifierpnj [NPCID] [HAIRID] [SHOESID] [TSHIRTID] [VESTID] [PANTSID] [GLOVESID] [BACKPACKID] [KEEPPOSITION]");
+                        SendClientMessage(playerId, "#ffffff", "USAGE: /modifierpnj [NPCID] [SKINID] [KEEPPOSITION]");
                     }
                     break;
                 case "setnpcpos":
@@ -1468,7 +1515,7 @@ public class Roleplay : Gamemode
             playerUI.textAlignment = 6;
             playerUI.position = new Vector2(305.7f, 120.7f);
             playerUI.size = new Vector2(581.5f, 191.4f);
-            playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + (int)rpCharacter.money + "€</color> \n" + "Métier: Sans emploi";
+            playerUI.text = rpCharacter.firstname + " " + rpCharacter.lastname + "\n" + "Argent: <color=orange>" + (int)rpCharacter.money + "€</color> \n" + "Métier: " + Utils.GetJobById(rpCharacter.jobId).jobName;
             PlayerTextDrawUpdate(playerId, int.Parse(playerTextID), playerUI);
         }
 
@@ -1513,13 +1560,13 @@ public class Roleplay : Gamemode
     void TextLabels()
     {
         TEXTLABEL_BUYCAR_01 = Create3DTextLabel("<color=orange>F</color> pour acheter ce Landstalker", new Vector3(818.036f, 165.078f, 1110.951f));
-        TEXTLABEL_MARKET_01 = Create3DTextLabel("<color=orange>F</color> pour consulter la liste des produits", new Vector3(791.4f, 165, 1146.3f));
-        TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(821.2f, 166.5f, 1069.6f));
-        TEXTLABEL_BUS_STOP_01 = Create3DTextLabel("<color=orange>F</color> pour voir les bus en service", new Vector3(811.2f, 165.9f, 1077.8f));
+        TEXTLABEL_MARKET_01 = Create3DTextLabel("<color=orange>F</color> pour consulter la liste des produits", new Vector3(672.8f, 50.9f, 880));
+        TEXTLABEL_ATM = Create3DTextLabel("<color=orange>/atm</color> pour retirer ou déposer de l'argent", new Vector3(668.74f, 51.15f, 891));
+        TEXTLABEL_BUS_STOP_01 = Create3DTextLabel("<color=orange>F</color> pour voir les bus en service", new Vector3(678.68f, 50.8f, 889));
         TEXTLABEL_JOB_ELECTECHNICIAN_01 = Create3DTextLabel("<color=orange>F</color> pour inspecter l'armoire électrique", new Vector3(839.2f, 166.5f, 1069.4f));
         TEXTLABEL_JOB_ELECTECHNICIAN_02 = Create3DTextLabel("<color=orange>F</color> pour inspecter l'armoire électrique", new Vector3(841.6f, 166.5f, 1069.4f));
-        TEXTLABEL_PHONE = Create3DTextLabel("<color=orange>/t appel</color> pour utiliser la cabine téléphonique", new Vector3(812.3f, 165.9f, 1069f));
-        TEXTLABEL_TOWNHALL_BUSINESS = Create3DTextLabel("<color=orange>F</color> pour créer une entreprise", new Vector3(824.6f, 166.5f, 1074.4f));
-        TEXTLABEL_TOWNHALL_JOBS = Create3DTextLabel("<color=orange>F</color> pour consulter la liste des métiers", new Vector3(827.2f, 166.5f, 1076.5f));
+        TEXTLABEL_PHONE = Create3DTextLabel("<color=orange>/t appel</color> pour utiliser la cabine téléphonique", new Vector3(388.2f, 50.77f, 880));
+        TEXTLABEL_TOWNHALL_BUSINESS = Create3DTextLabel("<color=orange>F</color> pour créer une entreprise", new Vector3(394.1f, 51.5f, 868.3f));
+        TEXTLABEL_TOWNHALL_JOBS = Create3DTextLabel("<color=orange>F</color> pour consulter la liste des métiers", new Vector3(394.1f, 51.5f, 866.9f));
     }
 }
